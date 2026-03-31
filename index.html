@@ -1,13 +1,1395 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>pylingo</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PyLingo — Aprende Python</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans','Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#f1f5f9}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+button{cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s,transform .1s}
+button:hover{opacity:.86}
+button:active{transform:scale(.97)}
+textarea{font-family:'DM Mono',monospace;resize:vertical}
+textarea:focus{outline:none}
+pre{font-family:'DM Mono',monospace}
+.fade{animation:fadeIn .3s ease}
+.pop{animation:pop .35s cubic-bezier(.34,1.56,.64,1) both}
+.slide{animation:slideUp .28s ease both}
+.brillo{animation:brillo .65s ease}
+.shake{animation:shake .38s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pop{0%{transform:scale(.82);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+@keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+@keyframes brillo{0%,100%{box-shadow:0 0 0 0 #22c55e44}50%{box-shadow:0 0 0 10px #22c55e00}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+@keyframes xpFloat{0%{opacity:0;transform:translateY(0)}20%{opacity:1;transform:translateY(-6px)}80%{opacity:1}100%{opacity:0;transform:translateY(-52px)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.xp-float{position:absolute;left:50%;top:-4px;transform:translateX(-50%);font-size:14px;font-weight:700;color:#16a34a;animation:xpFloat 1.4s ease forwards;pointer-events:none;white-space:nowrap}
+.pulse{animation:pulse 2s ease infinite}
+#sidebar{width:225px;flex-shrink:0}
+#main-area{flex:1;min-width:0}
+.lock-item{display:flex;align-items:center;gap:8px;padding:7px 14px 7px 22px;opacity:0.4}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="header" style="background:#fff;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:50;box-shadow:0 1px 6px #0000000d">
+  <div style="max-width:1280px;margin:0 auto;padding:0 20px;height:56px;display:flex;align-items:center;gap:14px">
+    <button onclick="toggleSidebar()" style="background:none;border:none;color:#94a3b8;font-size:20px;padding:2px 6px;border-radius:6px">☰</button>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#2563eb,#1e40af);display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px #2563eb44">🐍</div>
+      <span style="font-weight:700;font-size:17px;color:#0f172a;letter-spacing:-.5px">Py<span style="color:#2563eb">Lingo</span></span>
+    </div>
+    <div style="flex:1;display:flex;align-items:center;gap:10px">
+      <div style="flex:1;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden">
+        <div id="progress-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#2563eb,#2563ebcc);border-radius:99px;transition:width .5s ease"></div>
+      </div>
+      <span id="progress-text" style="font-size:12px;font-weight:600;color:#64748b;white-space:nowrap">0/32</span>
+    </div>
+    <div id="streak-badge" style="display:none;align-items:center;gap:4px;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:20px;padding:3px 11px;flex-shrink:0">
+      <span>🔥</span><span id="streak-num" style="font-size:13px;font-weight:700;color:#ea580c">0</span>
+    </div>
+    <div id="xp-badge" style="display:none;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:20px;padding:3px 11px;flex-shrink:0">
+      <span id="xp-num" style="font-size:13px;font-weight:700;color:#2563eb">⭐ 0 XP</span>
+    </div>
+    <button onclick="resetProgress()" title="Reiniciar progreso" style="background:none;border:1px solid #e2e8f0;color:#94a3b8;font-size:11px;padding:3px 8px;border-radius:6px;flex-shrink:0">↺ Reset</button>
+    <button id="exam-btn" onclick="startExam()" style="display:none;padding:6px 16px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:20px;color:#fff;font-weight:700;font-size:12.5px;flex-shrink:0;box-shadow:0 4px 12px #7c3aed44" class="pulse">🎓 Examen Final</button>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<div style="max-width:1280px;margin:0 auto;padding:20px;display:flex;gap:18px" id="layout">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;position:sticky;top:70px">
+      <div style="padding:11px 14px;border-bottom:1px solid #f1f5f9"><span style="font-size:10.5px;font-weight:700;color:#94a3b8;letter-spacing:.08em;text-transform:uppercase">Bloques</span></div>
+      <div id="sidebar-content" style="max-height:calc(100vh - 140px);overflow-y:auto"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main-area">
+    <div id="course-view"></div>
+    <div id="exam-view" style="display:none"></div>
+    <div id="finish-view" style="display:none"></div>
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DATOS Y ESTADO
+// ═══════════════════════════════════════════════════════════════
+const STARTER = '# Escribe tu código aquí\n';
+const INTENTOS_SOL = 4;
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const norm = s => s.trim().split('\n').map(l => l.trimEnd()).join('\n');
+
+let STATE = {
+  idx: 0,
+  code: STARTER,
+  done: {},
+  streak: 0,
+  tries: {},
+  panel: 'explicacion',
+  hint: false,
+  result: null,
+  sidebarOpen: true,
+  vista: 'curso', // 'curso' | 'examen' | 'completado'
+};
+
+let CURRICULO = [];
+let BLOQUES = [];
+let EXAM_QUESTIONS = [];
+let EXAM_STATE = { idx: 0, code: STARTER, aprobadas: [], tries: {}, result: null, hint: false };
+
+// ═══════════════════════════════════════════════════════════════
+// GENERADORES DE EJERCICIOS
+// ═══════════════════════════════════════════════════════════════
+function gen1a() {
+  const datos = [
+    {nombre:'Carlos',edad:28,ciudad:'Madrid'},{nombre:'María',edad:22,ciudad:'Barcelona'},
+    {nombre:'Lucas',edad:31,ciudad:'Valencia'},{nombre:'Sofía',edad:25,ciudad:'Bilbao'},
+    {nombre:'Alejandro',edad:34,ciudad:'Málaga'},{nombre:'Elena',edad:27,ciudad:'Zaragoza'},
+  ];
+  const d = pick(datos);
+  const expected = `Hola, soy ${d.nombre}, tengo ${d.edad} años y vivo en ${d.ciudad}.`;
+  return {id:'1a',titulo:'Tarjeta de presentación',
+    task:`Crea una presentación personal en Python.\n\nUsa variables para guardar tu nombre ("${d.nombre}"), tu edad (${d.edad}) y tu ciudad ("${d.ciudad}"), e imprímelas en una sola línea usando un f-string.`,
+    pista:`Declara las tres variables y usa un f-string: print(f"...{'{nombre}'}...{'{edad}'}...")`,
+    expected,
+    validator:(s)=>s.includes(d.nombre) && s.includes(String(d.edad)) && s.includes(d.ciudad),
+    solution:`nombre = "${d.nombre}"\nedad = ${d.edad}\nciudad = "${d.ciudad}"\nprint(f"Hola, soy {nombre}, tengo {edad} años y vivo en {ciudad}.")`,starter:STARTER};
+}
+function gen1b() {
+  const items = [{producto:'Teclado',precio:49.99,cantidad:3},{producto:'Auriculares',precio:29.99,cantidad:2},{producto:'Ratón',precio:19.99,cantidad:4},{producto:'Webcam',precio:59.99,cantidad:3}];
+  const a = pick(items);
+  const total = Math.round(a.precio * a.cantidad * 100) / 100;
+  return {id:'1b',titulo:'Recibo de compra',
+    task:`Tienes un producto llamado "${a.producto}" con un precio unitario de ${a.precio}€ y una cantidad de ${a.cantidad} unidades.\n\nGuarda esos datos en variables, calcula el precio total e imprímelo todo con formato claro.`,
+    pista:'El total es precio * cantidad. Guárdalo en una variable y usa un f-string.',
+    expected:`Producto: ${a.producto} | Precio unitario: ${a.precio}€ | Total: ${total}€`,
+    validator:(s)=>s.includes(String(total)),
+    solution:`producto = "${a.producto}"\nprecio = ${a.precio}\ncantidad = ${a.cantidad}\ntotal = precio * cantidad\nprint(f"Producto: {producto} | Precio unitario: {precio}€ | Total: {total}€")`,starter:STARTER};
+}
+function gen1c() {
+  const c = pick([0,20,37,50,100,25]);
+  const f = c * 9 / 5 + 32;
+  return {id:'1c',titulo:'Conversor de temperatura',
+    task:`Convierte ${c}°C a Fahrenheit y muestra el resultado en pantalla.\n\nGuarda la temperatura en una variable y aplica esta fórmula:\n\n  Fahrenheit = Celsius × 9/5 + 32`,
+    pista:'Guarda celsius en una variable, calcula fahrenheit con la fórmula (C * 9/5 + 32) y usa un f-string con el símbolo °.',
+    expected:`${c}°C equivalen a ${f}°F`,
+    validator:(s)=>s.includes(String(f)),
+    solution:`celsius = ${c}\nfahrenheit = celsius * 9/5 + 32\nprint(f"{celsius}°C equivalen a {fahrenheit}°F")`,starter:STARTER};
+}
+function gen1p() {
+  const empleados = [{nombre:'Carlos Ruiz',puesto:'Desarrollador',salario:2800,exp:4},{nombre:'Ana Gómez',puesto:'Diseñadora UX',salario:2500,exp:3},{nombre:'Marcos León',puesto:'Analista de datos',salario:3100,exp:6},{nombre:'Lucía Pardo',puesto:'DevOps Engineer',salario:3400,exp:5}];
+  const e = pick(empleados);
+  return {id:'1p',titulo:'🏗️ Proyecto: Ficha de empleado',esProyecto:true,
+    task:`Crea una ficha de empleado para ${e.nombre}, que trabaja como ${e.puesto}, cobra ${e.salario}€/mes y tiene ${e.exp} años de experiencia.\n\nUsa variables para cada dato e imprímelo en dos líneas: una con el nombre y puesto, otra con el salario y la experiencia.`,
+    pista:'Necesitas dos print(). Primero nombre y puesto, luego salario y experiencia.',
+    expected:`Empleado: ${e.nombre} -- ${e.puesto}\nSalario: ${e.salario}€/mes | Experiencia: ${e.exp} años`,
+    validator:(s)=>s.includes(String(e.salario)) && s.includes(e.nombre),
+    solution:`nombre = "${e.nombre}"\npuesto = "${e.puesto}"\nsalario = ${e.salario}\nexp = ${e.exp}\nprint(f"Empleado: {nombre} -- {puesto}")\nprint(f"Salario: {salario}€/mes | Experiencia: {exp} años")`,starter:STARTER};
+}
+function gen2a() {
+  const casos = [{item:'huevos',total:247,caja:12},{item:'naranjas',total:185,caja:8},{item:'botellas',total:310,caja:24},{item:'libros',total:134,caja:9}];
+  const sc = pick(casos);
+  const cajas = Math.floor(sc.total / sc.caja);
+  const sobran = sc.total % sc.caja;
+  const cap = sc.item[0].toUpperCase() + sc.item.slice(1);
+  return {id:'3a',titulo:'División con resto',
+    task:`Tienes ${sc.total} ${sc.item} para empaquetar en cajas de ${sc.caja}.\n\nCalcula cuántas cajas completas puedes llenar y cuántos ${sc.item} sobran. Imprime ambos resultados.`,
+    pista:'Usa // para la división entera y % para el resto.',
+    expected:`Cajas completas: ${cajas}\n${cap} sobrantes: ${sobran}`,
+    solution:`total = ${sc.total}\npor_caja = ${sc.caja}\nprint(f"Cajas completas: {total // por_caja}")\nprint(f"${cap} sobrantes: {total % por_caja}")`,starter:STARTER};
+}
+function gen2p() {
+  const c = pick([{precio:120,pct:25},{precio:80,pct:10},{precio:200,pct:30},{precio:150,pct:20}]);
+  const desc = c.precio * c.pct / 100;
+  return {id:'3p',titulo:'🏗️ Proyecto: Calculadora de descuentos',esProyecto:true,
+    task:`Un artículo cuesta ${c.precio}€ y tiene un descuento del ${c.pct}%.\n\nCalcula el importe del descuento y el precio final. Imprime ambos resultados.`,
+    pista:'El descuento es precio * porcentaje / 100. El precio final es precio menos el descuento.',
+    expected:`Descuento aplicado: ${desc}€\nPrecio final: ${c.precio - desc}€`,
+    validator:(s)=>s.includes(String(c.precio - desc)),
+    solution:`precio = ${c.precio}\ndescuento_pct = ${c.pct}\ndescuento = precio * descuento_pct / 100\nprecio_final = precio - descuento\nprint(f"Descuento aplicado: {descuento}€")\nprint(f"Precio final: {precio_final}€")`,starter:STARTER};
+}
+function gen3a() {
+  const n = pick([{val:9.5,res:'Matrícula'},{val:8.0,res:'Notable'},{val:7.5,res:'Notable'},{val:6.5,res:'Bien'},{val:5.5,res:'Aprobado'},{val:4.0,res:'Suspenso'}]);
+  return {id:'4a',titulo:'Clasificador de notas',
+    task:`nota = ${n.val}\n\nClasifica la nota con if/elif/else e imprime la calificación correspondiente:\n· Matrícula si nota >= 9\n· Notable si nota >= 7\n· Bien si nota >= 6\n· Aprobado si nota >= 5\n· Suspenso en cualquier otro caso`,
+    pista:'Usa if/elif/else ordenando las condiciones de mayor a menor.',
+    expected:n.res,
+    solution:`nota = ${n.val}\nif nota >= 9:\n    print("Matrícula")\nelif nota >= 7:\n    print("Notable")\nelif nota >= 6:\n    print("Bien")\nelif nota >= 5:\n    print("Aprobado")\nelse:\n    print("Suspenso")`,starter:STARTER};
+}
+function gen3b() {
+  const e = pick([{edad:3,res:'gratis'},{edad:7,res:'8€'},{edad:12,res:'8€'},{edad:18,res:'15€'},{edad:45,res:'15€'},{edad:65,res:'7€'}]);
+  return {id:'4b',titulo:'Calculadora de tarifas',
+    task:`Un parque cobra según la edad:\n  · Menores de 5 años: gratis\n  · De 5 a 12 años: 8€\n  · De 13 a 64 años: 15€\n  · 65 años o más: 7€\n\nedad = ${e.edad}\n\nImprime la tarifa que corresponde.`,
+    pista:'Usa if/elif/else. Puedes usar elif 5 <= edad <= 12 para rangos.',
+    expected:`Tarifa: ${e.res}`,
+    solution:`edad = ${e.edad}\nif edad < 5:\n    print("Tarifa: gratis")\nelif edad <= 12:\n    print("Tarifa: 8€")\nelif edad <= 64:\n    print("Tarifa: 15€")\nelse:\n    print("Tarifa: 7€")`,starter:STARTER};
+}
+function gen3p() {
+  const c = pick([{saldo:500,retiro:200},{saldo:300,retiro:150},{saldo:1000,retiro:400}]);
+  return {id:'4p',titulo:'🏗️ Proyecto: Cajero automático',esProyecto:true,
+    task:`saldo = ${c.saldo}\nretiro = ${c.retiro}\npin_correcto = True\n\nSimula un cajero que comprueba:\n1. Si el PIN no es correcto → avisa\n2. Si el retiro supera el saldo → avisa\n3. Si todo está bien → descuenta e informa del nuevo saldo`,
+    pista:'if not pin_correcto → primera condición. elif retiro > saldo → segunda. else → ejecuta el retiro.',
+    expected:`Retiro de ${c.retiro}€ realizado. Nuevo saldo: ${c.saldo - c.retiro}€`,
+    validator:(s)=>s.includes(String(c.saldo - c.retiro)),
+    solution:`saldo = ${c.saldo}\nretiro = ${c.retiro}\npin_correcto = True\nif not pin_correcto:\n    print("PIN incorrecto")\nelif retiro > saldo:\n    print("Saldo insuficiente")\nelse:\n    saldo = saldo - retiro\n    print(f"Retiro de {retiro}€ realizado. Nuevo saldo: {saldo}€")`,starter:STARTER};
+}
+function gen4a() {
+  const lim = pick([10,20,30,40,50]);
+  let suma = 0; for (let i=2;i<=lim;i+=2) suma+=i;
+  return {id:'5a',titulo:'Suma de pares',
+    task:`Suma todos los números pares del 2 al ${lim} (incluido) usando un bucle for.\n\nImprime la suma total al final.`,
+    pista:`Usa range(2, ${lim+1}, 2) para generar solo los pares. Acumula la suma empezando en 0.`,
+    expected:`Suma de pares del 2 al ${lim}: ${suma}`,
+    validator:(s)=>s.includes(String(suma)),
+    solution:`suma = 0\nfor i in range(2, ${lim+1}, 2):\n    suma += i\nprint(f"Suma de pares del 2 al ${lim}: {suma}")`,starter:STARTER};
+}
+function gen4b() {
+  const desde = pick([3,5,7,10]);
+  const nums = Array.from({length:desde},(_,i)=>String(desde-i)).join('\n');
+  return {id:'5b',titulo:'Cuenta atrás',
+    task:`Usa un bucle while para contar hacia atrás desde ${desde} hasta 1.\nCada número en su propia línea.\nAl terminar imprime: ¡Despegue!`,
+    pista:`Empieza con contador = ${desde}. Dentro del bucle: imprime y resta 1. El mensaje va FUERA del bucle.`,
+    expected:`${nums}\n¡Despegue!`,
+    solution:`contador = ${desde}\nwhile contador >= 1:\n    print(contador)\n    contador -= 1\nprint("¡Despegue!")`,starter:STARTER};
+}
+function gen5a() {
+  const precio = pick([50,100,200,80,120]);
+  return {id:'6a',titulo:'Calculadora de IVA',
+    task:`Define una función que calcule el precio con IVA dado un precio base. El IVA por defecto debe ser del 21%.\n\nLlámala con ${precio}€ e imprime el resultado.`,
+    pista:'Usa return para devolver el resultado. El parámetro iva tiene valor por defecto 21.',
+    expected:`Precio con IVA (21%): ${precio * 1.21}€`,
+    validator:(s)=>s.includes(String(precio * 1.21)),
+    solution:`def calcular_precio_iva(precio, iva=21):\n    return precio * (1 + iva / 100)\nresultado = calcular_precio_iva(${precio})\nprint(f"Precio con IVA (21%): {resultado}€")`,starter:STARTER};
+}
+function gen7p() {
+  const grupos = [
+    {'María':[8,7,9,6,8],'Pedro':[5,4,6,5,7],'Sofía':[9,10,8,9,10]},
+    {'Lucas':[7,8,6,9,7],'Elena':[4,5,3,6,4],'Diego':[10,9,8,9,10]},
+    {'Carla':[6,5,7,6,8],'Rubén':[8,9,7,8,9],'Nuria':[5,4,6,5,5]},
+  ];
+  const g = pick(grupos);
+  let mejorNombre='',mejorMedia=0;
+  const lineas = Object.entries(g).map(([nombre,notas])=>{
+    const media=Math.round(10*notas.reduce((a,b)=>a+b,0)/notas.length)/10;
+    const estado=media>=5?'Aprobado':'Suspenso';
+    if(media>mejorMedia){mejorMedia=media;mejorNombre=nombre;}
+    return `${nombre} → Media: ${media} | ${estado}`;
+  });
+  lineas.push(`Mejor alumno: ${mejorNombre}`);
+  const dictStr=Object.entries(g).map(([n,ns])=>`"${n}": ${JSON.stringify(ns)}`).join(', ');
+  const taskDict=Object.entries(g).map(([n,ns])=>`    "${n}": ${JSON.stringify(ns)}`).join(',\n');
+  return {id:'8p',titulo:'🏗️ Proyecto: Sistema de calificaciones',esProyecto:true,
+    task:`alumnos = {\n${taskDict}\n}\n\nCalcula la media de cada alumno (redondeada a 1 decimal) e indica si está aprobado o suspenso. Al final muestra quién tiene la mejor media.`,
+    pista:'Recorre alumnos.items(). Usa sum(notas)/len(notas) y round(...,1). Guarda el mejor mientras iteras.',
+    expected:lineas.join('\n'),
+    solution:`alumnos = {${dictStr}}\nmejor_nombre = ""\nmejor_media = 0\nfor nombre, notas in alumnos.items():\n    media = round(sum(notas) / len(notas), 1)\n    estado = "Aprobado" if media >= 5 else "Suspenso"\n    print(f"{nombre} → Media: {media} | {estado}")\n    if media > mejor_media:\n        mejor_media = media\n        mejor_nombre = nombre\nprint(f"Mejor alumno: {mejor_nombre}")`,starter:STARTER};
+}
+
+function buildCurriculo() {
+  return [
+    {id:1,titulo:'print()',emoji:'🖨️',color:'#2563eb',
+      explicacion:`print() es el primer comando que aprendes en Python. Le dice al ordenador que muestre algo en pantalla.
+
+  print("¡Hola, mundo!")
+  → ¡Hola, mundo!
+
+Así de simple. Todo lo que pongas entre las comillas aparecerá en pantalla tal cual.
+
+Puedes imprimir texto, números o el resultado de una operación:
+
+  print("Buenos días")        → Buenos días
+  print(42)                   → 42
+  print(10 + 5)               → 15
+  print(3 * 4)                → 12
+
+Varios print() seguidos muestran cada cosa en su propia línea:
+
+  print("Línea 1")
+  print("Línea 2")
+  → Línea 1
+  → Línea 2
+
+También puedes imprimir varias cosas juntas separándolas con coma:
+
+  print("El resultado es", 10 + 5)
+  → El resultado es 15
+
+⚠️ El texto SIEMPRE va entre comillas. Los números no necesitan comillas.`,
+      ejercicios:[
+        {id:'p1',titulo:'Tu primer print',
+          task:`Usa print() para mostrar este mensaje en pantalla:
+
+¡Hola, Python!`,
+          pista:'Escribe print() y pon el texto entre comillas dentro del paréntesis.',
+          expected:'¡Hola, Python!',
+          solution:`print("¡Hola, Python!")`,starter:STARTER},
+        {id:'p2',titulo:'Varias líneas',
+          task:`Muestra estas tres líneas en pantalla, cada una en su propia línea:
+
+Primera línea
+Segunda línea
+Tercera línea`,
+          pista:'Necesitas tres print() separados, uno por cada línea.',
+          expected:`Primera línea
+Segunda línea
+Tercera línea`,
+          solution:`print("Primera línea")
+print("Segunda línea")
+print("Tercera línea")`,starter:STARTER},
+        {id:'p3',titulo:'Operaciones con print',
+          task:`Usa print() para mostrar el resultado de estas operaciones:
+· 15 + 8
+· 20 - 6
+· 4 * 7`,
+          pista:'Puedes escribir la operación directamente dentro del print(), sin comillas.',
+          expected:`23
+14
+28`,
+          solution:`print(15 + 8)
+print(20 - 6)
+print(4 * 7)`,starter:STARTER},
+      ],
+      proyecto:{id:'p4',titulo:'🏗️ Proyecto: Tu tarjeta de visita',esProyecto:true,
+        task:`Usa print() para mostrar una tarjeta de visita con al menos 4 líneas:
+
+· Una línea de signos = como separador (la cantidad la decides tú)
+· Nombre: Ana García
+· Profesión: Desarrolladora
+· Ciudad: Madrid
+· Otra línea de signos = al final`,
+        pista:'Un print() por cada línea. Las líneas de "=====" son texto como cualquier otro.',
+        expected:`=============================
+Nombre: Ana García
+Profesión: Desarrolladora
+Ciudad: Madrid
+=============================`,
+        validator:(s)=>{ const lines=s.split('\n').map(l=>l.trim()).filter(l=>l); return lines.some(l=>/^=+$/.test(l)) && lines.some(l=>l.includes('Ana')) && lines.some(l=>l.includes('Madrid')); },
+        solution:`print("=============================")
+print("Nombre: Ana García")
+print("Profesión: Desarrolladora")
+print("Ciudad: Madrid")
+print("=============================")`,starter:STARTER}},
+
+    {id:2,titulo:'Variables',emoji:'📦',color:'#0891b2',
+      explicacion:`Una variable es como una cajita con nombre donde guardas información para usarla después.
+
+  nombre = "Ana"
+  edad = 25
+  print(nombre)   → Ana
+  print(edad)     → 25
+
+El símbolo = guarda el valor en la variable. No es "igual" matemático, es "guardar en".
+
+Hay cuatro tipos básicos de datos:
+  nombre = "Ana"      # texto (string) → siempre entre comillas
+  edad   = 25         # número entero (int)
+  altura = 1.75       # número decimal (float)
+  activo = True       # verdadero o falso (bool)
+
+Los f-strings son la forma más cómoda de mezclar texto y variables en un print(). Pon una f antes de las comillas y mete las variables entre llaves {}:
+
+  nombre = "Ana"
+  edad = 25
+  print(f"Me llamo {nombre} y tengo {edad} años")
+  → Me llamo Ana y tengo 25 años
+
+Puedes hacer operaciones con las variables directamente:
+  precio = 10
+  cantidad = 3
+  print(precio * cantidad)   → 30`,
+      ejercicios:[gen1a(),gen1b(),gen1c()],proyecto:gen1p()},
+
+    {id:3,titulo:'Operadores y Tipos',emoji:'🔢',color:'#7c3aed',
+      explicacion:`Además de sumar y restar, hay dos operadores que sorprenden al principio:
+
+  //  división entera -- se queda solo con los enteros, sin decimales
+      17 // 5  →  3  (cuántas veces cabe el 5 en el 17)
+
+  %   módulo -- devuelve el RESTO de la división
+      17 % 5   →  2  (17 = 5×3 + 2, ese 2 es el resto)
+      Truco: si n % 2 == 0, el número es par.
+
+  **  potencia
+      2 ** 8   →  256
+
+Operadores de comparación -- devuelven True o False:
+  ==  igual       !=  distinto
+  >   mayor       <   menor
+  >=  mayor o igual   <=  menor o igual
+
+Operadores lógicos para combinar condiciones:
+  and  →  True solo si LOS DOS son True
+  or   →  True si al menos UNO es True
+  not  →  invierte (True→False, False→True)
+
+Conversión de tipos -- a veces necesitas cambiar el formato de un dato:
+  int("42")     →  42     (texto a número entero)
+  float("3.14") →  3.14   (texto a decimal)
+  str(100)      →  "100"  (número a texto)`,
+      ejercicios:[gen2a(),
+        {id:'3b',titulo:'Verificación de acceso',
+          task:`usuario = "admin"\nclave_correcta = True\nedad = 20\n\nComprueba si el usuario tiene acceso: debe ser "admin", tener la clave correcta y ser mayor de edad. Imprime el resultado booleano.`,
+          pista:'Combina las tres condiciones con and dentro de un solo print().',
+          expected:'True',solution:`usuario = "admin"\nclave_correcta = True\nedad = 20\nprint(usuario == "admin" and clave_correcta and edad >= 18)`,starter:STARTER},
+        {id:'3c',titulo:'Par o impar',
+          task:`numero = 7\n\nImprime True si el número es par, False si es impar.`,
+          pista:'Usa % para el resto de dividir entre 2 y compara si es igual a 0.',
+          expected:'False',solution:`numero = 7\nprint(numero % 2 == 0)`,starter:STARTER}],
+      proyecto:gen2p()},
+
+    {id:4,titulo:'Condicionales',emoji:'🔀',color:'#dc2626',
+      explicacion:`Los condicionales le dan a tu programa la capacidad de tomar decisiones. Es como piensas tú cada día:
+
+  "Si llueve, cojo el paraguas. Si no, salgo sin él."
+
+En Python:
+  if llueve:
+      print("Cojo el paraguas")
+  else:
+      print("Salgo sin paraguas")
+
+Puedes añadir más casos con elif (que significa "si no, ¿y si...?"):
+  if nota >= 9:
+      print("Matrícula")
+  elif nota >= 7:
+      print("Notable")
+  elif nota >= 5:
+      print("Aprobado")
+  else:
+      print("Suspenso")
+
+⚠️ La sangría de 4 espacios es OBLIGATORIA. Python la usa para saber qué código pertenece a cada bloque. Sin ella, el programa falla.
+
+Puedes combinar condiciones:
+  if edad >= 18 and tiene_carnet:
+      print("Puede conducir")
+  if es_fin_de_semana or es_festivo:
+      print("¡Día libre!")`,
+      ejercicios:[gen3a(),gen3b(),
+        {id:'4c',titulo:'Año bisiesto',
+          task:`año = 2024\n\nDetermina si el año es bisiesto y muéstralo. Recuerda que las reglas del calendario gregoriano implican tres condiciones combinadas.`,
+          pista:'Condición: (año%4==0 and año%100!=0) or (año%400==0). Guárdala en una variable.',
+          expected:'2024 es bisiesto: True',
+          solution:`año = 2024\nbisiesto = (año % 4 == 0 and año % 100 != 0) or (año % 400 == 0)\nprint(f"{año} es bisiesto: {bisiesto}")`,starter:STARTER}],
+      proyecto:gen3p()},
+
+    {id:5,titulo:'Bucles',emoji:'🔁',color:'#16a34a',
+      explicacion:`Los bucles sirven para repetir código sin escribirlo una y otra vez. Hay dos tipos:
+
+------ FOR: cuando sabes cuántas veces repetir ------
+
+  for i in range(5):
+      print(i)
+  → imprime 0, 1, 2, 3, 4
+
+  range(1, 6)      → del 1 al 5 (el último no se incluye)
+  range(0, 10, 2)  → 0, 2, 4, 6, 8  (de 2 en 2)
+
+También puedes recorrer una lista directamente:
+  for fruta in ["manzana", "pera", "naranja"]:
+      print(fruta)
+
+------ WHILE: cuando no sabes cuántas veces, solo la condición ------
+
+  contador = 0
+  while contador < 5:
+      print(contador)
+      contador += 1   ← ¡IMPORTANTE! Si no cambias la variable, el bucle no para nunca
+
+------ Acumuladores: ir sumando resultados en un bucle ------
+
+  suma = 0
+  for i in range(1, 6):
+      suma += i     ← es lo mismo que suma = suma + i
+  print(suma)  →  15`,
+      ejercicios:[gen4a(),gen4b(),
+        {id:'5c',titulo:'FizzBuzz clásico',
+          task:`Del 1 al 15 imprime:\n· "FizzBuzz" si es múltiplo de 3 Y de 5\n· "Fizz" si es múltiplo de 3\n· "Buzz" si es múltiplo de 5\n· El número si no cumple nada`,
+          pista:'Comprueba primero el múltiplo de AMBOS (15), luego de 3, luego de 5.',
+          expected:'1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz',
+          solution:`for i in range(1, 16):\n    if i % 15 == 0:\n        print("FizzBuzz")\n    elif i % 3 == 0:\n        print("Fizz")\n    elif i % 5 == 0:\n        print("Buzz")\n    else:\n        print(i)`,starter:STARTER}],
+      proyecto:{id:'5p',titulo:'🏗️ Proyecto: Tablas de multiplicar',esProyecto:true,
+        task:`Genera las tablas de multiplicar del 7 al 9 usando un bucle dentro de otro. Cada tabla debe ir encabezada con su título y mostrar los resultados del 1 al 10.`,
+        pista:'Bucle exterior del 7 al 9. Bucle interior del 1 al 10. Imprime el encabezado antes de cada tabla.',
+        expected:'--- Tabla del 7 ---\n7 x 1 = 7\n7 x 2 = 14\n7 x 3 = 21\n7 x 4 = 28\n7 x 5 = 35\n7 x 6 = 42\n7 x 7 = 49\n7 x 8 = 56\n7 x 9 = 63\n7 x 10 = 70\n--- Tabla del 8 ---\n8 x 1 = 8\n8 x 2 = 16\n8 x 3 = 24\n8 x 4 = 32\n8 x 5 = 40\n8 x 6 = 48\n8 x 7 = 56\n8 x 8 = 64\n8 x 9 = 72\n8 x 10 = 80\n--- Tabla del 9 ---\n9 x 1 = 9\n9 x 2 = 18\n9 x 3 = 27\n9 x 4 = 36\n9 x 5 = 45\n9 x 6 = 54\n9 x 7 = 63\n9 x 8 = 72\n9 x 9 = 81\n9 x 10 = 90',
+        solution:`for tabla in range(7, 10):\n    print(f"--- Tabla del {tabla} ---")\n    for i in range(1, 11):\n        print(f"{tabla} x {i} = {tabla * i}")`,starter:STARTER}},
+
+    {id:6,titulo:'Funciones',emoji:'⚙️',color:'#0891b2',
+      explicacion:`Una función es como una receta que escribes una vez y puedes usar cuantas veces quieras. En lugar de repetir el mismo código, lo metes en una función y la llamas por su nombre.
+
+  def saludar(nombre):
+      return f"¡Hola, {nombre}!"
+
+  print(saludar("Ana"))    →  ¡Hola, Ana!
+  print(saludar("Carlos")) →  ¡Hola, Carlos!
+
+Las partes de una función:
+  def        → la palabra clave para definirla
+  nombre     → cómo la vas a llamar
+  parámetros → los datos que le pasas (entre paréntesis)
+  return     → el resultado que devuelve
+
+Puedes poner valores por defecto en los parámetros:
+  def potencia(base, exp=2):
+      return base ** exp
+
+  potencia(3)     →  9   (usa exp=2 por defecto)
+  potencia(3, 3)  →  27  (ahora le pasas exp=3)
+
+⚠️ Si la función no tiene return, no devuelve nada útil. Asegúrate de usarlo cuando necesites el resultado.`,
+      ejercicios:[gen5a(),
+        {id:'6b',titulo:'Validador de contraseña',
+          task:`Define una función que compruebe si una contraseña es segura. Una contraseña es segura si tiene al menos 8 caracteres y contiene algún número.\n\nPruébala con "python123" e imprime si es segura o no.`,
+          pista:'Combina las dos condiciones con and dentro del return.',
+          expected:'Contraseña segura: True',
+          solution:`def es_contrasena_segura(clave):\n    tiene_largo = len(clave) >= 8\n    tiene_numero = any(c.isdigit() for c in clave)\n    return tiene_largo and tiene_numero\nprint(f"Contraseña segura: {es_contrasena_segura('python123')}")`,starter:STARTER},
+        {id:'6c',titulo:'Factorial recursivo',
+          task:`Define una función recursiva que calcule el factorial de un número.\n\nRecuerda: el factorial de 0 y 1 es 1, y para el resto se basa en el resultado anterior.\n\nÚsala para calcular el factorial de 5 e imprime el resultado.`,
+          pista:'El caso base detiene la recursión. Sin él, el programa entraría en bucle infinito.',
+          expected:'5! = 120',
+          solution:`def factorial(n):\n    if n == 0 or n == 1:\n        return 1\n    return n * factorial(n - 1)\nprint(f"5! = {factorial(5)}")`,starter:STARTER}],
+      proyecto:{id:'6p',titulo:'🏗️ Proyecto: Conversor de unidades',esProyecto:true,
+        task:`Crea tres funciones de conversión de unidades:\n· Kilómetros a millas\n· Kilogramos a libras\n· Celsius a Fahrenheit\n\nPruébalas con 100 km, 70 kg y 37 °C, e imprime los resultados.`,
+        pista:'Define las tres funciones con return. Llama a cada una y usa round() para los decimales.',
+        expected:'100 km = 62.1371 millas\n70 kg = 154.3234 libras\n37 °C = 98.6 °F',
+        solution:`def km_a_millas(km):\n    return km * 0.621371\ndef kg_a_libras(kg):\n    return round(kg * 2.20462, 4)\ndef celsius_a_fahrenheit(c):\n    return c * 9/5 + 32\nprint(f"100 km = {km_a_millas(100)} millas")\nprint(f"70 kg = {kg_a_libras(70)} libras")\nprint(f"37 °C = {celsius_a_fahrenheit(37)} °F")`,starter:STARTER}},
+
+    {id:7,titulo:'Listas y Tuplas',emoji:'📋',color:'#6d28d9',
+      explicacion:`Una lista es como una bandeja con compartimentos: guarda varios valores en orden dentro de una sola variable.
+
+  frutas = ["manzana", "pera", "naranja"]
+
+Acceder a elementos (el índice empieza en 0, no en 1):
+  frutas[0]   →  "manzana"           (el primero)
+  frutas[-1]  →  "naranja"           (el último)
+  frutas[0:2] →  ["manzana", "pera"] (del índice 0 al 1)
+
+Modificar la lista:
+  frutas.append("uva")    → añade al final
+  frutas.remove("pera")   → elimina la primera que encuentre
+  frutas.sort()           → ordena
+  len(frutas)             → cuántos elementos tiene
+
+Comprensión de listas -- una forma compacta de crear listas:
+  cuadrados = [x**2 for x in range(1, 6)]
+  →  [1, 4, 9, 16, 25]
+
+  Solo los pares:
+  pares = [x for x in range(10) if x % 2 == 0]
+  →  [0, 2, 4, 6, 8]
+
+Tuplas -- como listas, pero no se pueden modificar. Úsalas para datos fijos:
+  punto = (40.41, -3.70)`,
+      ejercicios:[
+        {id:'7a',titulo:'Estadísticas de notas',
+          task:`notas = [7, 9, 4, 8, 6, 5, 9, 3, 8, 7]\n\nCalcula e imprime la nota máxima, la mínima, la media y cuántos alumnos han aprobado (nota >= 5).`,
+          pista:'Usa max(), min(), sum()/len() para la media. Para aprobados: sum(1 for n in notas if n >= 5).',
+          expected:'Máxima: 9\nMínima: 3\nMedia: 6.6\nAprobados: 8',
+          solution:`notas = [7, 9, 4, 8, 6, 5, 9, 3, 8, 7]\nprint(f"Máxima: {max(notas)}")\nprint(f"Mínima: {min(notas)}")\nprint(f"Media: {sum(notas)/len(notas)}")\nprint(f"Aprobados: {sum(1 for n in notas if n >= 5)}")`,starter:STARTER},
+        {id:'7b',titulo:'Comprensión de listas',
+          task:`Usando comprensión de listas:\n1. Crea una lista con los cuadrados del 1 al 8\n2. A partir de esa lista, crea otra con solo los impares\n\nImprime ambas listas.`,
+          pista:'Para los impares filtra con: if x % 2 != 0',
+          expected:'Cuadrados: [1, 4, 9, 16, 25, 36, 49, 64]\nCuadrados impares: [1, 9, 25, 49]',
+          solution:`cuadrados = [x**2 for x in range(1, 9)]\nimpares = [x for x in cuadrados if x % 2 != 0]\nprint(f"Cuadrados: {cuadrados}")\nprint(f"Cuadrados impares: {impares}")`,starter:STARTER},
+        {id:'7c',titulo:'Manipulación de lista',
+          task:`lista = [3, 1, 4, 1, 5, 9, 2, 6]\n\nRealiza estas tres operaciones en orden:\n1. Añade el 7 al final\n2. Elimina el primer 1 que encuentres\n3. Ordena la lista\n\nImprime la lista resultante.`,
+          pista:'Usa append(), remove() y sort() en ese orden.',
+          expected:'[2, 3, 4, 5, 6, 7, 9]',
+          solution:`lista = [3, 1, 4, 1, 5, 9, 2, 6]\nlista.append(7)\nlista.remove(1)\nlista.sort()\nprint(lista)`,starter:STARTER}],
+      proyecto:{id:'7p',titulo:'🏗️ Proyecto: Gestión de inventario',esProyecto:true,
+        task:`productos = ["Laptop", "Ratón", "Teclado", "Monitor", "Auriculares"]\nprecios = [899, 25, 45, 299, 79]\n\nMuestra un inventario numerado con el precio de cada producto, el total y cuál es el más caro.`,
+        pista:'Usa range(len(productos)) para iterar con índice. Para el más caro: max(precios) y .index().',
+        expected:'=== INVENTARIO ===\n1. Laptop - 899€\n2. Ratón - 25€\n3. Teclado - 45€\n4. Monitor - 299€\n5. Auriculares - 79€\nTotal inventario: 1347€\nProducto más caro: Laptop',
+        solution:`productos = ["Laptop", "Ratón", "Teclado", "Monitor", "Auriculares"]\nprecios = [899, 25, 45, 299, 79]\nprint("=== INVENTARIO ===")\nfor i in range(len(productos)):\n    print(f"{i+1}. {productos[i]} - {precios[i]}€")\nprint(f"Total inventario: {sum(precios)}€")\nidx = precios.index(max(precios))\nprint(f"Producto más caro: {productos[idx]}")`,starter:STARTER}},
+
+    {id:8,titulo:'Diccionarios y Sets',emoji:'🗂️',color:'#0284c7',
+      explicacion:`Un diccionario es como una agenda: cada entrada tiene un nombre (la clave) y un dato asociado (el valor).
+
+  persona = {"nombre": "Ana", "edad": 25, "ciudad": "Madrid"}
+
+Acceder a los datos:
+  persona["nombre"]           →  "Ana"
+  persona.get("email", "--")   →  "--"  (si no existe, devuelve el valor por defecto en lugar de dar error)
+
+Recorrer un diccionario:
+  for clave, valor in persona.items():
+      print(f"{clave}: {valor}")
+
+Métodos útiles:
+  persona.keys()    → todas las claves
+  persona.values()  → todos los valores
+  persona.items()   → pares (clave, valor)
+
+------ Sets: colecciones SIN duplicados ------
+
+Un set es como una bolsa donde no puede haber dos cosas iguales. Perfecto para eliminar repeticiones:
+
+  numeros = {1, 2, 2, 3, 3, 3}
+  →  {1, 2, 3}   (los duplicados desaparecen solos)
+
+  a = {1,2,3,4}   b = {3,4,5,6}
+  a & b  →  {3,4}           (los que están en ambos)
+  a | b  →  {1,2,3,4,5,6}  (todos juntos)
+  a - b  →  {1,2}           (los de a que no están en b)`,
+      ejercicios:[
+        {id:'8a',titulo:'Frecuencia de palabras',
+          task:`frase = "el sol sale y el sol brilla y el cielo es azul"\n\nCuenta cuántas veces aparece cada palabra e imprime el resultado.`,
+          pista:'Divide con split(). Recorre palabras y usa dict.get(palabra, 0) + 1 para contar.',
+          expected:'el: 3\nsol: 2\nsale: 1\ny: 2\nbrilla: 1\ncielo: 1\nes: 1\nazul: 1',
+          solution:`frase = "el sol sale y el sol brilla y el cielo es azul"\ncontador = {}\nfor palabra in frase.split():\n    contador[palabra] = contador.get(palabra, 0) + 1\nfor palabra, veces in contador.items():\n    print(f"{palabra}: {veces}")`,starter:STARTER},
+        {id:'8b',titulo:'Agenda de contactos',
+          task:`agenda = {\n    "Ana": "612345678",\n    "Carlos": "698765432",\n    "Lucía": "677112233"\n}\n\nRecorre la agenda e imprime cada contacto con formato claro. Al final muestra el total de contactos.`,
+          pista:'Usa agenda.items() para obtener nombre y teléfono en cada iteración.',
+          expected:'=== AGENDA ===\nAna → 612345678\nCarlos → 698765432\nLucía → 677112233\nTotal contactos: 3',
+          solution:`agenda = {"Ana": "612345678", "Carlos": "698765432", "Lucía": "677112233"}\nprint("=== AGENDA ===")\nfor nombre, telefono in agenda.items():\n    print(f"{nombre} → {telefono}")\nprint(f"Total contactos: {len(agenda)}")`,starter:STARTER},
+        {id:'8c',titulo:'Eliminar duplicados',
+          task:`numeros = [3, 7, 2, 7, 1, 3, 9, 2, 8, 1, 5]\n\nElimina los duplicados, ordénalos de menor a mayor e imprime la lista resultante junto al total de números únicos.`,
+          pista:'Convierte a set() para eliminar duplicados, luego sorted() para ordenar.',
+          expected:'Números únicos ordenados: [1, 2, 3, 5, 7, 8, 9]\nTotal únicos: 7',
+          solution:`numeros = [3, 7, 2, 7, 1, 3, 9, 2, 8, 1, 5]\nunicos = sorted(set(numeros))\nprint(f"Números únicos ordenados: {unicos}")\nprint(f"Total únicos: {len(unicos)}")`,starter:STARTER}],
+      proyecto:gen7p()},
+
+    {id:9,titulo:'Strings y Programas',emoji:'🚀',color:'#be185d',
+      explicacion:`Los strings (textos) en Python tienen herramientas muy prácticas para manipularlos.
+
+Las más usadas:
+  "  hola  ".strip()       →  "hola"          (elimina espacios al principio y al final)
+  "hola".upper()           →  "HOLA"           (todo en mayúsculas)
+  "HOLA".lower()           →  "hola"           (todo en minúsculas)
+  "hola mundo".replace("mundo", "Python")  →  "hola Python"
+  "a,b,c".split(",")       →  ["a","b","c"]    (divide en lista)
+  "hola".count("l")        →  2                (cuántas veces aparece algo)
+  ", ".join(["a","b","c"]) →  "a, b, c"        (une una lista en texto)
+
+Formato avanzado en f-strings -- para mostrar datos con precisión:
+  f"{3.14159:.2f}"    →  "3.14"        (2 decimales)
+  f"{precio:>10.2f}"  →  "      3.14"  (alineado a la derecha en 10 caracteres)
+  f"{nombre:<10}"     →  "Ana       "  (alineado a la izquierda)
+  f"{0.75:.0%}"       →  "75%"         (formato porcentaje)
+
+Esto es muy útil cuando quieras mostrar tablas o informes con todo bien alineado.`,
+      ejercicios:[
+        {id:'9a',titulo:'Analizador de texto',
+          task:`texto = "Python es el lenguaje del futuro y Python es genial"\n\nAnaliza el texto e imprime el número de palabras, los caracteres sin contar espacios, cuántas veces aparece "Python" y el texto en mayúsculas.`,
+          pista:'Para palabras usa split(). Para caracteres sin espacios usa replace(" ", ""). Para contar usa count().',
+          expected:'Palabras: 10\nCaracteres (sin espacios): 44\nVeces que aparece "Python": 2\nEn mayúsculas: PYTHON ES EL LENGUAJE DEL FUTURO Y PYTHON ES GENIAL',
+          solution:`texto = "Python es el lenguaje del futuro y Python es genial"\nprint(f"Palabras: {len(texto.split())}")\nprint(f"Caracteres (sin espacios): {len(texto.replace(' ', ''))}")\nprint(f'Veces que aparece "Python": {texto.count("Python")}')\nprint(f"En mayúsculas: {texto.upper()}")`,starter:STARTER},
+        {id:'9b',titulo:'Tabla formateada',
+          task:`Tienes estos productos y precios:\n  Laptop → 899€\n  Ratón → 25€\n  Teclado → 45€\n\nMuestra una tabla alineada con separadores, precios con 2 decimales y el total al final.`,
+          pista:'Usa f"{nombre:<14}" para alinear izquierda y f"{precio:>8.2f}" para alinear derecha con 2 decimales.',
+          expected:'=========================\nProducto       Precio\n=========================\nLaptop          899.00€\nRatón            25.00€\nTeclado          45.00€\n=========================\nTOTAL           969.00€',
+          solution:`sep = "========================="\nproductos = [("Laptop",899),("Ratón",25),("Teclado",45)]\nprint(sep)\nprint("Producto       Precio")\nprint(sep)\ntotal = 0\nfor nombre, precio in productos:\n    print(f"{nombre:<14} {precio:>8.2f}€")\n    total += precio\nprint(sep)\nprint(f"TOTAL          {total:>8.2f}€")`,starter:STARTER},
+        {id:'9c',titulo:'Cifrado César',
+          task:`El cifrado César desplaza cada letra del alfabeto un número fijo de posiciones.\n\nCrea una función que cifre un texto desplazando cada letra minúscula 3 posiciones. Los espacios no se modifican.\n\nPruébala con "hola mundo" e imprime el resultado.`,
+          pista:"Recorre cada carácter. Si es letra minúscula: chr((ord(c) - ord('a') + 3) % 26 + ord('a')).",
+          expected:'Cifrado: krod pxqgr',
+          solution:`def cifrar(texto, d=3):\n    r = ""\n    for c in texto:\n        if c.isalpha() and c.islower():\n            r += chr((ord(c) - ord("a") + d) % 26 + ord("a"))\n        else:\n            r += c\n    return r\nprint(f"Cifrado: {cifrar('hola mundo')}")`,starter:STARTER}],
+      proyecto:{id:'9p',titulo:'🏗️ Proyecto Final: Gestor de tareas',esProyecto:true,
+        task:`tareas = [\n    {"nombre": "Estudiar Python",  "prioridad": "alta",  "hecha": True},\n    {"nombre": "Hacer ejercicio",  "prioridad": "media", "hecha": False},\n    {"nombre": "Leer un libro",    "prioridad": "baja",  "hecha": False},\n    {"nombre": "Revisar correos",  "prioridad": "alta",  "hecha": True},\n]\n\nMuestra cada tarea indicando si está hecha o pendiente, junto a su prioridad. Al final imprime cuántas están completadas y cuántas de alta prioridad siguen pendientes.`,
+        pista:'Usa "[✓]" o "[ ]" según tarea["hecha"]. Cuenta con sum() y condiciones.',
+        expected:'=== GESTOR DE TAREAS ===\n[✓] Estudiar Python (alta)\n[ ] Hacer ejercicio (media)\n[ ] Leer un libro (baja)\n[✓] Revisar correos (alta)\n---\nCompletadas: 2/4\nPendientes de alta prioridad: 0',
+        solution:`tareas = [\n    {"nombre": "Estudiar Python",  "prioridad": "alta",  "hecha": True},\n    {"nombre": "Hacer ejercicio",  "prioridad": "media", "hecha": False},\n    {"nombre": "Leer un libro",    "prioridad": "baja",  "hecha": False},\n    {"nombre": "Revisar correos",  "prioridad": "alta",  "hecha": True},\n]\nprint("=== GESTOR DE TAREAS ===")\nfor t in tareas:\n    marca = "[✓]" if t["hecha"] else "[ ]"\n    print(f"{marca} {t['nombre']} ({t['prioridad']})")\nprint("---")\ncomp = sum(1 for t in tareas if t["hecha"])\nprint(f"Completadas: {comp}/{len(tareas)}")\npend = sum(1 for t in tareas if not t["hecha"] and t["prioridad"] == "alta")\nprint(f"Pendientes de alta prioridad: {pend}")`,starter:STARTER}},
+  ];
+}
+
+function buildExamen() {
+  const datos=[{n:'Carlos',e:28,c:'Madrid'},{n:'Sofía',e:25,c:'Bilbao'},{n:'Elena',e:27,c:'Sevilla'}];
+  const d=pick(datos);
+  const ns=[15,23,48,72,100]; const n=pick(ns);
+  const ts=[15,22,35,8,50]; const t=pick(ts); const est=t>=30?'Calor':t>=20?'Agradable':t>=10?'Fresco':'Frío';
+  const ls=[5,7,9,11]; const lim=pick(ls); let s=0; for(let i=1;i<=lim;i++) s+=i;
+  const bs=[2,3,4,5]; const es=[3,4,5]; const b=pick(bs); const e=pick(es);
+  const opciones=[[4,7,2,9,1],[3,8,5,1,6],[10,2,7,4,9]]; const nums=pick(opciones);
+  const mx=Math.max(...nums),mn=Math.min(...nums),sm=nums.reduce((a,b)=>a+b,0);
+  const ops=[['manzana','pera','manzana','naranja','pera','manzana'],['gato','perro','gato','pez','perro','gato']];
+  const items=pick(ops); const cnt={}; items.forEach(x=>cnt[x]=(cnt[x]||0)+1);
+  const exp7=Object.entries(cnt).map(([k,v])=>`${k}: ${v}`).join('\n');
+  const frases=['python es genial','el codigo es arte','aprender es crecer']; const frase=pick(frases);
+  return [
+    {bloque:1,titulo:'Variables y print',task:`Usa variables para guardar nombre ("${d.n}"), edad (${d.e}) y ciudad ("${d.c}"), e imprímelas en una sola frase con un f-string.`,expected:`Hola, soy ${d.n}, tengo ${d.e} años y vivo en ${d.c}.`,pista:'Declara tres variables y usa print(f"...").',solution:`nombre = "${d.n}"\nedad = ${d.e}\nciudad = "${d.c}"\nprint(f"Hola, soy {nombre}, tengo {edad} años y vivo en {ciudad}.")`},
+    {bloque:2,titulo:'Operadores',task:`numero = ${n}\n\nImprime True si el número es divisible entre 3, False si no.`,expected:String(n%3===0),pista:'Usa % para comprobar si el resto de dividir entre 3 es 0.',solution:`numero = ${n}\nprint(numero % 3 == 0)`},
+    {bloque:3,titulo:'Condicionales',task:`temperatura = ${t}\n\nClasifica la temperatura e imprime:\n· "Frío" si es menor de 10\n· "Fresco" si es menor de 20\n· "Agradable" si es menor de 30\n· "Calor" si es 30 o más`,expected:est,pista:'Usa if/elif/else ordenando de menor a mayor.',solution:`temperatura = ${t}\nif temperatura < 10:\n    print("Frío")\nelif temperatura < 20:\n    print("Fresco")\nelif temperatura < 30:\n    print("Agradable")\nelse:\n    print("Calor")`},
+    {bloque:4,titulo:'Bucles',task:`Usa un bucle for para sumar todos los números del 1 al ${lim} e imprime el resultado.`,expected:`La suma del 1 al ${lim} es: ${s}`,pista:`Usa range(1, ${lim+1}) y un acumulador.`,solution:`suma = 0\nfor i in range(1, ${lim+1}):\n    suma += i\nprint(f"La suma del 1 al ${lim} es: {suma}")`},
+    {bloque:5,titulo:'Funciones',task:`Define una función llamada potencia(base, exp) que devuelva base elevado a exp.\n\nLlámala con base=${b} y exp=${e} e imprime el resultado.`,expected:String(Math.pow(b,e)),pista:'Usa ** para la potencia y return para devolver el resultado.',solution:`def potencia(base, exp):\n    return base ** exp\nprint(potencia(${b}, ${e}))`},
+    {bloque:6,titulo:'Listas',task:`numeros = ${JSON.stringify(nums)}\n\nImprime el valor máximo, el mínimo y la suma de la lista.`,expected:`Máximo: ${mx}\nMínimo: ${mn}\nSuma: ${sm}`,pista:'Usa max(), min() y sum() directamente sobre la lista.',solution:`numeros = ${JSON.stringify(nums)}\nprint(f"Máximo: {max(numeros)}")\nprint(f"Mínimo: {min(numeros)}")\nprint(f"Suma: {sum(numeros)}")`},
+    {bloque:7,titulo:'Diccionarios',task:`elementos = ${JSON.stringify(items)}\n\nCuenta cuántas veces aparece cada elemento e imprime el resultado.`,expected:exp7,pista:'Usa un diccionario vacío y dict.get(item, 0) + 1 para contar.',solution:`elementos = ${JSON.stringify(items)}\ncontador = {}\nfor item in elementos:\n    contador[item] = contador.get(item, 0) + 1\nfor k, v in contador.items():\n    print(f"{k}: {v}")`},
+    {bloque:8,titulo:'Strings',task:`frase = "${frase}"\n\nImprime cuántas palabras tiene la frase y la frase en mayúsculas.`,expected:`Palabras: ${frase.split(' ').length}\n${frase.toUpperCase()}`,pista:'Usa split() para contar palabras y upper() para mayúsculas.',solution:`frase = "${frase}"\nprint(f"Palabras: {len(frase.split())}")\nprint(frase.upper())`},
+  ];
+}
+
+function aplanar(bloques) {
+  const lista = [];
+  bloques.forEach(b => {
+    b.ejercicios.forEach(e => lista.push({...e, bloque:b}));
+    lista.push({...b.proyecto, bloque:b});
+  });
+  return lista;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MOTOR PYTHON
+// ═══════════════════════════════════════════════════════════════
+function runPython(code) {
+  const out = []; const vars = {};
+  function pyStr(v) {
+    if (v===true) return 'True'; if (v===false) return 'False';
+    if (v===null||v===undefined) return 'None';
+    if (Array.isArray(v)) return '['+v.map(pyStr).join(', ')+']';
+    if (typeof v==='object') return '{'+Object.entries(v).map(([k,val])=>`'${k}': ${pyStr(val)}`).join(', ')+'}';
+    return String(v);
+  }
+  function splitArgs(s) {
+    const p=[]; let d=0,cur='',inS=false,sc='';
+    for(const c of s){
+      if(!inS&&(c==='"'||c==="'")){ inS=true;sc=c;cur+=c; }
+      else if(inS&&c===sc){ inS=false;cur+=c; }
+      else if(!inS&&'([{'.includes(c)){ d++;cur+=c; }
+      else if(!inS&&')]}'.includes(c)){ d--;cur+=c; }
+      else if(!inS&&c===','&&d===0){ p.push(cur);cur=''; }
+      else cur+=c;
+    }
+    if(cur.trim()) p.push(cur); return p;
+  }
+  function evalRange(expr,av){
+    const m=expr.trim().match(/^range\((.+)\)$/); if(!m) return null;
+    const parts=splitArgs(m[1]).map(a=>parseInt(evalVal(a.trim(),av)));
+    const[s,e,step]=parts.length===1?[0,parts[0],1]:parts.length===2?[parts[0],parts[1],1]:parts;
+    const arr=[]; for(let i=s;step>0?i<e:i>e;i+=step) arr.push(i); return arr;
+  }
+  function evalVal(expr,lv={}){
+    expr=expr.trim(); const av={...vars,...lv};
+    const fs=expr.match(/^f(["'])([\s\S]*?)\1$/);
+    if(fs) return fs[2].replace(/\{([^{}]*)\}/g,(_,k)=>{
+      const fm=k.match(/^(.+):(.+)$/);
+      if(fm){
+        const val=evalVal(fm[1].trim(),av),fmt=fm[2];
+        if(fmt.endsWith('%')) return(val*100).toFixed(parseInt(fmt)||0)+'%';
+        const mf=fmt.match(/^([<>^]?)(\d+)(?:\.(\d+))?f?$/);
+        if(mf){
+          const dec=mf[3]!==undefined?parseInt(mf[3]):0,w=mf[2]?parseInt(mf[2]):0;
+          const s=parseFloat(val).toFixed(dec); if(!w) return s;
+          const al=mf[1]||'>',pad=w-s.length; if(pad<=0) return s;
+          if(al==='<') return s+' '.repeat(pad);
+          if(al==='>') return ' '.repeat(pad)+s;
+          return ' '.repeat(Math.floor(pad/2))+s+' '.repeat(Math.ceil(pad/2));
+        }
+        const mw=fmt.match(/^([<>^])(\d+)$/);
+        if(mw){const s=String(val),w=parseInt(mw[2]),al=mw[1],pad=w-s.length;
+          if(pad<=0)return s; if(al==='<')return s+' '.repeat(pad); if(al==='>') return ' '.repeat(pad)+s;
+          return ' '.repeat(Math.floor(pad/2))+s+' '.repeat(Math.ceil(pad/2));}
+        return String(val);
+      }
+      try{return pyStr(evalVal(k.trim(),av));}catch{return k;}
+    });
+    const str=expr.match(/^(["'])([\s\S]*?)\1$/); if(str) return str[2];
+    if(expr==='True') return true; if(expr==='False') return false; if(expr==='None') return null;
+    if(expr.startsWith('[')&&expr.endsWith(']')){const inn=expr.slice(1,-1).trim();return inn?splitArgs(inn).map(s=>evalVal(s.trim(),av)):[];}
+    if(expr.startsWith('{')&&expr.endsWith('}')){const inn=expr.slice(1,-1).trim();const res={};if(inn)splitArgs(inn).forEach(pair=>{const ci=pair.indexOf(':');if(ci>-1)res[evalVal(pair.slice(0,ci).trim(),av)]=evalVal(pair.slice(ci+1).trim(),av);});return res;}
+    const da=expr.match(/^([\w\u00C0-\u024F]+)\[(["'])(.*?)\2\]$/); if(da&&av[da[1]]!==undefined) return av[da[1]][da[3]];
+    const li=expr.match(/^([\w\u00C0-\u024F]+)\[(-?\d+)\]$/); if(li&&av[li[1]]!==undefined){const arr=av[li[1]],i=parseInt(li[2]);return Array.isArray(arr)?(i<0?arr[arr.length+i]:arr[i]):arr[i];}
+    const mm=expr.match(/^([\w\u00C0-\u024F]+)\.([\w]+)\(([\s\S]*)\)$/);
+    if(mm){const obj=evalVal(mm[1],av),meth=mm[2],args=mm[3].trim()?splitArgs(mm[3]).map(a=>evalVal(a.trim(),av)):[];
+      if(typeof obj==='string'){
+        if(meth==='upper') return obj.toUpperCase(); if(meth==='lower') return obj.toLowerCase();
+        if(meth==='strip') return obj.trim(); if(meth==='split') return obj.split(args[0]!==undefined?args[0]:/\s+/).filter(Boolean);
+        if(meth==='replace') return obj.replaceAll(args[0],args[1]); if(meth==='count') return obj.split(args[0]).length-1;
+        if(meth==='startswith') return obj.startsWith(args[0]); if(meth==='endswith') return obj.endsWith(args[0]);
+        if(meth==='join') return(args[0]||[]).join(obj); if(meth==='isdigit') return/^\d+$/.test(obj);
+        if(meth==='isalpha') return/^[a-zA-Z\u00C0-\u024F]+$/.test(obj);
+        if(meth==='islower') return obj===obj.toLowerCase()&&obj!==obj.toUpperCase();
+        if(meth==='isupper') return obj===obj.toUpperCase()&&obj!==obj.toLowerCase();
+      }
+      if(Array.isArray(obj)){
+        if(meth==='append'){obj.push(args[0]);return null;} if(meth==='remove'){const i=obj.indexOf(args[0]);if(i>-1)obj.splice(i,1);return null;}
+        if(meth==='pop') return obj.pop(); if(meth==='sort'){obj.sort((a,b)=>typeof a==='number'?a-b:String(a).localeCompare(String(b)));return null;}
+        if(meth==='reverse'){obj.reverse();return null;} if(meth==='index') return obj.indexOf(args[0]);
+        if(meth==='count') return obj.filter(x=>x===args[0]).length; if(meth==='insert'){obj.splice(args[0],0,args[1]);return null;}
+      }
+      if(obj&&typeof obj==='object'&&!Array.isArray(obj)){
+        if(meth==='keys') return Object.keys(obj); if(meth==='values') return Object.values(obj);
+        if(meth==='items') return Object.entries(obj);
+        if(meth==='get') return obj[args[0]]!==undefined?obj[args[0]]:(args[1]!==undefined?args[1]:null);
+        if(meth==='update'){Object.assign(obj,args[0]);return null;}
+      }
+    }
+    const b1=expr.match(/^round\((.+),\s*(\d+)\)$/); if(b1) return+parseFloat(evalVal(b1[1],av)).toFixed(parseInt(b1[2]));
+    const b2=expr.match(/^(int|float|str|bool|len|max|min|sum|sorted|list|abs|ord|chr|set)\((.+)\)$/);
+    if(b2){const fn=b2[1],arg=evalVal(b2[2],av);
+      if(fn==='int') return parseInt(arg); if(fn==='float') return parseFloat(arg);
+      if(fn==='str') return String(arg); if(fn==='bool') return!!arg;
+      if(fn==='abs') return Math.abs(arg); if(fn==='ord') return String(arg).charCodeAt(0);
+      if(fn==='chr') return String.fromCharCode(arg);
+      if(fn==='len') return typeof arg==='string'?arg.length:Array.isArray(arg)?arg.length:Object.keys(arg).length;
+      if(fn==='max') return Array.isArray(arg)?Math.max(...arg):arg;
+      if(fn==='min') return Array.isArray(arg)?Math.min(...arg):arg;
+      if(fn==='sum') return Array.isArray(arg)?arg.reduce((a,b)=>a+b,0):0;
+      if(fn==='sorted') return Array.isArray(arg)?[...arg].sort((a,b)=>typeof a==='number'?a-b:String(a).localeCompare(String(b))):arg;
+      if(fn==='set') return Array.isArray(arg)?[...new Set(arg)]:[];
+      if(fn==='list') return Array.isArray(arg)?arg:[];
+    }
+    const anyM=expr.match(/^any\((.+)\s+for\s+([\w\u00C0-\u024F]+)\s+in\s+(.+)\)$/);
+    if(anyM){const iter=evalVal(anyM[3],av);return(Array.isArray(iter)?iter:[...String(iter)]).some(item=>!!evalVal(anyM[1],{...av,[anyM[2]]:item}));}
+    const sumG=expr.match(/^sum\((.+?)\s+for\s+([\w\u00C0-\u024F]+)\s+in\s+(.+?)(?:\s+if\s+(.+))?\)$/);
+    if(sumG){const iter=evalVal(sumG[3],av);return(Array.isArray(iter)?iter:[]).filter(item=>!sumG[4]||!!evalVal(sumG[4],{...av,[sumG[2]]:item})).reduce((acc,item)=>acc+evalVal(sumG[1],{...av,[sumG[2]]:item}),0);}
+    const lcM=expr.match(/^\[(.+)\s+for\s+([\w\u00C0-\u024F]+)\s+in\s+(.+?)(?:\s+if\s+(.+))?\]$/);
+    if(lcM){const iter=evalRange(lcM[3],av)||evalVal(lcM[3],av);if(!Array.isArray(iter))return[];return iter.filter(item=>!lcM[4]||!!evalVal(lcM[4],{...av,[lcM[2]]:item})).map(item=>evalVal(lcM[1],{...av,[lcM[2]]:item}));}
+    const rng=evalRange(expr,av); if(rng) return rng;
+    const fc=expr.match(/^([\w\u00C0-\u024F]+)\(([\s\S]*)\)$/); if(fc&&av[fc[1]]?.__fn) return callFn(av[fc[1]],fc[2],av);
+    if(av[expr]!==undefined) return av[expr];
+    if(!isNaN(expr)&&expr!=='') return+expr;
+    if(expr.startsWith('not ')) return!evalVal(expr.slice(4),av);
+    const ninM=expr.match(/^(.+?)\s+not in\s+(.+)$/); if(ninM){const v=evalVal(ninM[1].trim(),av),c=evalVal(ninM[2].trim(),av);return Array.isArray(c)?!c.includes(v):!String(c).includes(String(v));}
+    const inM=expr.match(/^(.+?)\s+in\s+(.+)$/); if(inM&&!inM[1].includes('for')){const v=evalVal(inM[1].trim(),av),c=evalVal(inM[2].trim(),av);return Array.isArray(c)?c.includes(v):(typeof c==='object'?Object.keys(c).includes(String(v)):String(c).includes(String(v)));}
+    let safe=expr;
+    Object.keys(av).sort((a,b)=>b.length-a.length).forEach(k=>{safe=safe.replace(new RegExp(`\\b${k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'g'),JSON.stringify(av[k]));});
+    safe=safe.replace(/\bTrue\b/g,'true').replace(/\bFalse\b/g,'false').replace(/\band\b/g,'&&').replace(/\bor\b/g,'||').replace(/\bnot\b/g,'!');
+    try{return Function('"use strict";return('+safe+')')();}catch{}
+    // If expr looks like a bare identifier (not a string/number), it's undefined
+    if(/^[\w\u00C0-\u024F]+$/.test(expr)) return undefined;
+    return expr;
+  }
+  function callFn(fn,argsStr,lv={}){
+    const args=argsStr.trim()?splitArgs(argsStr).map(a=>evalVal(a.trim(),lv)):[];
+    const fl={};
+    fn.params.forEach((p,i)=>{const dm=p.match(/(.+?)=(.+)/);fl[dm?dm[1].trim():p]=args[i]!==undefined?args[i]:(dm?evalVal(dm[2].trim(),lv):undefined);});
+    let ret;
+    for(const bl of fn.body){const bt=bl.trim();if(!bt||bt.startsWith('#'))continue;const rm=bt.match(/^return\s+([\s\S]+)$/);if(rm){ret=evalVal(rm[1],fl);break;}execLine(bt,fl,true);}
+    return ret;
+  }
+  function execLine(bt,lv,inFn=false){
+    const av={...vars,...lv},tgt=inFn?lv:vars;
+    const pm=bt.match(/^print\(([\s\S]*)\)$/); if(pm){try{out.push(pyStr(evalVal(pm[1],lv)));}catch{out.push('');}return;}
+    const incM=bt.match(/^([\w\u00C0-\u024F]+)\s*([+\-*/])=\s*([\s\S]+)$/);
+    if(incM){const cur=(inFn?lv[incM[1]]:vars[incM[1]])??0;try{tgt[incM[1]]=Function('"use strict";return('+JSON.stringify(cur)+incM[2]+JSON.stringify(evalVal(incM[3],lv))+')')();}catch{}return;}
+    const da=bt.match(/^([\w\u00C0-\u024F]+)\[(["'])(.*?)\2\]\s*=\s*([\s\S]+)$/); if(da&&av[da[1]]){try{av[da[1]][da[3]]=evalVal(da[4],lv);}catch{}return;}
+    const asgM=bt.match(/^([\w\u00C0-\u024F]+)\s*=\s*([\s\S]+)$/);
+    if(asgM&&!bt.includes('==')&&!bt.includes('!=')&&!bt.includes('<=')&&!bt.includes('>=')){try{tgt[asgM[1]]=evalVal(asgM[2],lv);}catch{}return;}
+    const callM=bt.match(/^([\w\u00C0-\u024F]+)\(([\s\S]*)\)$/); if(callM&&av[callM[1]]?.__fn){callFn(av[callM[1]],callM[2],lv);return;}
+    try{evalVal(bt,lv);}catch{}
+  }
+  function getInd(line){return(line.match(/^(\s*)/)||['',''])[1].length;}
+  function runBlock(lines,lv={}){
+    let j=0;
+    while(j<lines.length){
+      const raw=lines[j],bt=raw.trim(); if(!bt||bt.startsWith('#')){j++;continue;}
+      const indent=getInd(raw);
+      const defM=bt.match(/^def\s+([\w\u00C0-\u024F]+)\s*\(([^)]*)\)\s*:$/);
+      if(defM){const fname=defM[1],params=defM[2].split(',').map(p=>p.trim()).filter(Boolean);j++;const body=[];while(j<lines.length&&lines[j].trim()!=''&&getInd(lines[j])>indent){body.push(lines[j].slice(indent+4));j++;}(lv!==vars?lv:vars)[fname]={__fn:true,params,body};continue;}
+      const forM=bt.match(/^for\s+([\w\u00C0-\u024F]+)(?:,\s*([\w\u00C0-\u024F]+))?\s+in\s+([\s\S]+):$/);
+      if(forM){const v1=forM[1],v2=forM[2];j++;const body=[];while(j<lines.length&&(lines[j].trim()===''||getInd(lines[j])>indent)){if(lines[j].trim())body.push(lines[j].slice(indent+4));j++;}const iter=evalRange(forM[3].trim(),{...vars,...lv})||evalVal(forM[3].trim(),{...vars,...lv});if(Array.isArray(iter)){for(const item of iter){if(v2&&Array.isArray(item)){lv[v1]=item[0];lv[v2]=item[1];}else lv[v1]=item;runBlock(body,lv);}}continue;}
+      const wM=bt.match(/^while\s+([\s\S]+):$/);
+      if(wM){j++;const body=[];while(j<lines.length&&(lines[j].trim()===''||getInd(lines[j])>indent)){if(lines[j].trim())body.push(lines[j].slice(indent+4));j++;}let g=0;while(evalVal(wM[1],{...vars,...lv})&&g++<500)runBlock(body,lv);continue;}
+      if(bt.match(/^if\s+[\s\S]+:$/)){
+        const branches=[];
+        while(j<lines.length){const t=lines[j].trim();const ifM=t.match(/^(?:if|elif)\s+([\s\S]+):$/);
+          if(ifM){j++;const body=[];while(j<lines.length&&(lines[j].trim()===''||getInd(lines[j])>indent)){if(lines[j].trim())body.push(lines[j].slice(indent+4));j++;}branches.push({cond:ifM[1],body});}
+          else if(t==='else:'){j++;const body=[];while(j<lines.length&&(lines[j].trim()===''||getInd(lines[j])>indent)){if(lines[j].trim())body.push(lines[j].slice(indent+4));j++;}branches.push({cond:null,body});break;}
+          else break;}
+        for(const br of branches){if(br.cond===null||evalVal(br.cond,{...vars,...lv})){runBlock(br.body,lv);break;}}
+        continue;
+      }
+      execLine(bt,lv); j++;
+    }
+  }
+  runBlock(code.split('\n'),vars);
+  return out.join('\n');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LÓGICA DE DESBLOQUEO
+// ═══════════════════════════════════════════════════════════════
+function bloqueCompletado(bid) {
+  return CURRICULO.filter(e=>e.bloque.id===bid).every(e=>STATE.done[e.id]);
+}
+function bloqueDesbloqueado(bid) {
+  return bid===1 || bloqueCompletado(bid-1);
+}
+function todoCompletado() {
+  return BLOQUES.every(b=>bloqueCompletado(b.id));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER HELPERS
+// ═══════════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function lineNums(code) {
+  return code.split('\n').map((_,i)=>`<div style="font-size:12px;line-height:22px;padding:0 7px;color:#334155;font-family:'DM Mono',monospace">${i+1}</div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER SIDEBAR
+// ═══════════════════════════════════════════════════════════════
+function renderSidebar() {
+  const ej = CURRICULO[STATE.idx];
+  let html = '';
+  BLOQUES.forEach(b => {
+    const items = CURRICULO.map((e,i)=>({e,i})).filter(({e})=>e.bloque.id===b.id);
+    const desbloq = bloqueDesbloqueado(b.id);
+    const complet = bloqueCompletado(b.id);
+    html += `<div>
+      <div style="padding:8px 14px 3px;display:flex;align-items:center;gap:5px">
+        <span style="font-size:13px">${desbloq?(complet?'✅':b.emoji):'🔒'}</span>
+        <span style="font-size:10.5px;font-weight:700;color:${desbloq?b.color:'#cbd5e1'};text-transform:uppercase;letter-spacing:.05em;opacity:${desbloq?1:0.7}">${b.titulo}</span>
+      </div>`;
+    items.forEach(({e,i}) => {
+      const act = i===STATE.idx, hecho = !!STATE.done[e.id];
+      const label = e.esProyecto ? e.titulo.replace('🏗️ Proyecto: ','').replace('🏗️ Proyecto Final: ','') : e.titulo;
+      if (!desbloq) {
+        html += `<div class="lock-item"><span style="width:17px;height:17px;border-radius:50%;background:#f1f5f9;border:1.5px solid #e2e8f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#cbd5e1;flex-shrink:0">🔒</span><span style="font-size:12px;color:#cbd5e1">${esc(label)}</span></div>`;
+      } else {
+        const bg = act ? `${b.color}11` : 'transparent';
+        const bl = act ? b.color : 'transparent';
+        const circBg = hecho?'#dcfce7':act?`${b.color}22`:'#f1f5f9';
+        const circCol = hecho?'#16a34a':act?b.color:'#94a3b8';
+        const circBd = hecho?'#86efac':act?b.color:'#e2e8f0';
+        html += `<button onclick="goTo(${i})" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 14px 7px 22px;background:${bg};border:none;border-left:3px solid ${bl};text-align:left;transition:background .15s">
+          <span style="width:17px;height:17px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;background:${circBg};color:${circCol};border:1.5px solid ${circBd}">${hecho?'✓':e.esProyecto?'★':''}</span>
+          <span style="font-size:12px;font-weight:${act?600:400};color:${act?'#0f172a':'#475569'};line-height:1.3">${esc(label)}</span>
+        </button>`;
+      }
+    });
+    html += '</div>';
+  });
+  if (todoCompletado()) {
+    html += `<div style="padding:10px 14px;border-top:1px solid #f1f5f9"><button onclick="startExam()" style="width:100%;padding:9px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:12.5px">🎓 Hacer examen</button></div>`;
+  }
+  document.getElementById('sidebar-content').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER CURSO
+// ═══════════════════════════════════════════════════════════════
+function renderCourse() {
+  const ej = CURRICULO[STATE.idx];
+  const bl = ej.bloque;
+  const col = bl.color;
+  const triesN = STATE.tries[ej.id]||0;
+  const verSol = triesN >= INTENTOS_SOL;
+  const hecho = !!STATE.done[ej.id];
+  const desbloq = bloqueDesbloqueado(bl.id);
+
+  let html = '';
+
+  // Bloque bloqueado
+  if (!desbloq) {
+    html += `<div style="background:#fef9c3;border:1.5px solid #fde047;border-radius:14px;padding:16px 20px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">🔒</span>
+      <div><p style="font-weight:700;font-size:14px;color:#854d0e">Bloque bloqueado</p>
+      <p style="font-size:13px;color:#92400e">Completa todos los ejercicios del bloque anterior para desbloquear este.</p></div>
+    </div>`;
+  }
+
+  // Tags
+  html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:5px;background:${col};color:#fff;border-radius:20px;padding:4px 13px;font-size:12px;font-weight:700"><span>${bl.emoji}</span>${esc(bl.titulo)}</div>
+    ${ej.esProyecto?`<span style="background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:20px;padding:3px 11px;font-size:11.5px;font-weight:700">🏗️ Proyecto final</span>`:''}
+    ${hecho?`<span style="background:#dcfce7;color:#16a34a;border:1px solid #86efac;border-radius:20px;padding:3px 11px;font-size:11.5px;font-weight:700">✓ Completado</span>`:''}
+  </div>`;
+
+  // Card explicación/tarea
+  html += `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;margin-bottom:14px;box-shadow:0 1px 6px #0000000a">
+    <div style="padding:16px 22px 0;border-bottom:1px solid #f1f5f9">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:12px">
+        <h1 style="font-size:19px;font-weight:700;color:#0f172a;letter-spacing:-.4px">${esc(ej.titulo)}</h1>
+        <div style="display:flex;gap:7px;flex-shrink:0">
+          ${STATE.idx>0?`<button onclick="goTo(${STATE.idx-1})" style="padding:5px 11px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;color:#475569">← Ant.</button>`:''}
+          ${STATE.idx<CURRICULO.length-1?`<button onclick="goTo(${STATE.idx+1})" style="padding:5px 11px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;color:#475569">Sig. →</button>`:''}
+        </div>
+      </div>
+      <div style="display:flex">
+        <button onclick="setPanel('explicacion')" style="padding:8px 16px;background:none;border:none;border-bottom:2.5px solid ${STATE.panel==='explicacion'?col:'transparent'};color:${STATE.panel==='explicacion'?col:'#94a3b8'};font-weight:${STATE.panel==='explicacion'?600:400};font-size:13.5px;margin-bottom:-1px">📖 Explicación</button>
+        <button onclick="setPanel('tarea')" style="padding:8px 16px;background:none;border:none;border-bottom:2.5px solid ${STATE.panel==='tarea'?col:'transparent'};color:${STATE.panel==='tarea'?col:'#94a3b8'};font-weight:${STATE.panel==='tarea'?600:400};font-size:13.5px;margin-bottom:-1px">📌 Tarea</button>
+      </div>
+    </div>
+    <div style="padding:16px 22px;max-height:260px;overflow-y:auto">
+      ${STATE.panel==='explicacion'
+        ?`<pre style="margin:0;font-family:'DM Sans',sans-serif;font-size:13.5px;color:#334155;line-height:1.8;white-space:pre-wrap">${esc(bl.explicacion)}</pre>`
+        :`<p style="font-size:13.5px;color:#1e293b;line-height:1.8;white-space:pre-line">${esc(ej.task)}</p>`}
+    </div>
+  </div>`;
+
+  // Editor
+  const editorBorder = STATE.result ? (STATE.result.correcto?'#22c55e':'#ef4444') : '#1e293b';
+  html += `<div id="editor-wrap" style="background:#0f172a;border-radius:14px;border:2px solid ${editorBorder};overflow:hidden;margin-bottom:12px;box-shadow:0 4px 24px #0000001a">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#1e293b">
+      <div style="display:flex;gap:5px"><div style="width:10px;height:10px;border-radius:50%;background:#ff5f57"></div><div style="width:10px;height:10px;border-radius:50%;background:#febc2e"></div><div style="width:10px;height:10px;border-radius:50%;background:#28c840"></div></div>
+      <span style="font-size:11px;color:#64748b;font-family:'DM Mono',monospace">${ej.id}.py</span>
+      <div style="display:flex;gap:10px">
+        <span style="font-size:10.5px;color:#475569">Ctrl+Enter = ejecutar</span>
+        <button onclick="resetCode()" style="background:none;border:1px solid #334155;color:#64748b;font-size:10.5px;padding:1px 8px;border-radius:4px">↺</button>
+      </div>
+    </div>
+    <div style="display:flex">
+      <div id="line-nums" style="padding:12px 0;min-width:38px;background:#0b1120;border-right:1px solid #1e293b;text-align:right;user-select:none">${lineNums(STATE.code)}</div>
+      <textarea id="code-editor" onkeydown="onEditorKey(event)" oninput="onCodeInput()" style="flex:1;padding:12px 16px;background:#0f172a;border:none;color:#e2e8f0;font-size:13.5px;line-height:22px;font-family:'DM Mono',monospace;resize:vertical;min-height:150px;caret-color:${col}">${esc(STATE.code)}</textarea>
+    </div>
+  </div>`;
+
+  // Botones
+  html += `<div style="display:flex;gap:10px;margin-bottom:12px;position:relative">
+    <button onclick="ejecutar()" style="flex:1;padding:11px 0;background:linear-gradient(135deg,${col},${col}cc);border:none;border-radius:11px;color:#fff;font-weight:700;font-size:14.5px;box-shadow:0 4px 16px ${col}44">▶ Ejecutar código</button>
+    <button onclick="toggleHint()" style="padding:11px 16px;background:#fff;border:1.5px solid #e2e8f0;border-radius:11px;color:#475569;font-size:13px">💡 ${STATE.hint?'Ocultar':'Pista'}</button>
+    ${hecho&&!ej.esProyecto?`<button onclick="otraVariante()" style="padding:11px 16px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:11px;color:#16a34a;font-size:13px;font-weight:600">🔀 Otro ejercicio</button>`:''}
+    <span id="xp-float-container"></span>
+  </div>`;
+
+  // Pista
+  if (STATE.hint) {
+    html += `<div class="slide" style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:12px;padding:13px 16px;margin-bottom:12px">
+      <p style="font-size:10.5px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">💡 Pista</p>
+      <p style="font-size:13.5px;color:#451a03;line-height:1.7">${esc(ej.pista)}</p>
+    </div>`;
+  }
+
+  // Barra de intentos
+  if (triesN>0 && !hecho) {
+    html += `<div style="margin-bottom:12px;display:flex;align-items:center;gap:10px">
+      <div style="flex:1;height:4px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+        <div style="width:${Math.min(triesN/INTENTOS_SOL*100,100)}%;height:100%;background:${verSol?'#ef4444':'#f59e0b'};border-radius:99px;transition:width .4s ease"></div>
+      </div>
+      <span style="font-size:11px;color:#94a3b8;white-space:nowrap">${verSol?'Solución desbloqueada':`${triesN}/${INTENTOS_SOL} intentos`}</span>
+    </div>`;
+  }
+
+  // Resultado
+  if (STATE.result) {
+    const r = STATE.result;
+    html += `<div class="pop" style="background:#fff;border:1.5px solid ${r.correcto?'#86efac':'#fca5a5'};border-radius:16px;padding:18px 20px;box-shadow:${r.correcto?'0 4px 24px #22c55e18':'0 4px 24px #ef444418'}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="width:34px;height:34px;border-radius:50%;background:${r.correcto?'#dcfce7':'#fee2e2'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${r.correcto?'✅':'❌'}</div>
+        <div>
+          <p style="font-weight:700;font-size:14.5px;color:${r.correcto?'#16a34a':'#dc2626'}">${r.correcto?'¡Correcto! Excelente trabajo.':'No es exactamente lo esperado. Revísalo.'}</p>
+          ${r.flexible?`<p style="font-size:12px;color:#0369a1;margin-top:4px">💡 Tu solución es válida. Abajo puedes ver una versión más limpia y convencional.</p>`:''}
+          ${r.correcto&&STATE.streak>1?`<p style="font-size:12px;color:#ea580c;margin-top:1px">🔥 ¡Racha de ${STATE.streak}!</p>`:''}
+          ${!r.correcto&&!verSol?`<p style="font-size:11.5px;color:#94a3b8;margin-top:1px">La solución aparecerá tras ${INTENTOS_SOL-triesN} intento${INTENTOS_SOL-triesN!==1?'s':''} más.</p>`:''}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <p style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Tu salida</p>
+          <pre style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:10px 12px;margin:0;font-size:12px;color:#1e293b;min-height:36px;white-space:pre-wrap;max-height:160px;overflow:auto">${esc(r.salida)||'(sin salida)'}</pre>
+        </div>
+        <div>
+          <p style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${r.correcto?'✓ Correcto':'Esperado'}</p>
+          <pre style="background:${r.correcto?'#f0fdf4':'#f8fafc'};border:1px solid ${r.correcto?'#86efac':'#e2e8f0'};border-radius:9px;padding:10px 12px;margin:0;font-size:12px;color:${r.correcto?'#16a34a':'#1e293b'};min-height:36px;white-space:pre-wrap;max-height:160px;overflow:auto">${esc(ej.expected)}</pre>
+        </div>
+      </div>
+      ${!r.correcto&&verSol?`<div class="fade" style="margin-top:12px;padding:12px 14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px">
+        <p style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:6px;text-transform:uppercase">📖 Una posible solución</p>
+        <pre style="margin:0;font-size:12.5px;color:#0c4a6e;white-space:pre-wrap;line-height:1.65">${esc(ej.solution)}</pre>
+      </div>`:''}
+      ${r.correcto?`<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+        ${!ej.esProyecto?`<button onclick="otraVariante()" style="padding:9px 18px;background:${col};border:none;border-radius:9px;color:#fff;font-weight:700;font-size:13px">🔀 Otro ejercicio del tema</button>`:''}
+        ${STATE.idx<CURRICULO.length-1?`<button onclick="goTo(${STATE.idx+1})" style="padding:9px 18px;background:${ej.esProyecto?'#16a34a':'#f8fafc'};border:1.5px solid ${ej.esProyecto?'#16a34a':'#e2e8f0'};border-radius:9px;color:${ej.esProyecto?'#fff':'#475569'};font-weight:700;font-size:13px">${ej.esProyecto?'🚀 Siguiente bloque →':'Siguiente →'}</button>`:''}
+        ${todoCompletado()&&STATE.idx===CURRICULO.length-1?`<button onclick="startExam()" style="padding:9px 18px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:9px;color:#fff;font-weight:700;font-size:13px">🎓 Hacer el examen final →</button>`:''}
+      </div>`:''}
+    </div>`;
+  }
+
+  document.getElementById('course-view').innerHTML = html;
+  // Restaurar el valor del textarea (innerHTML escapa, necesitamos value)
+  const ta = document.getElementById('code-editor');
+  if (ta) ta.value = STATE.code;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER EXAMEN
+// ═══════════════════════════════════════════════════════════════
+function renderExam() {
+  const preg = EXAM_QUESTIONS[EXAM_STATE.idx];
+  const total = EXAM_QUESTIONS.length;
+  const terminado = EXAM_STATE.idx >= total;
+
+  if (terminado) {
+    const aprobN = EXAM_STATE.aprobadas.length;
+    const nota = Math.round(aprobN/total*10);
+    const aprobado = nota >= 5;
+    document.getElementById('exam-view').innerHTML = `
+      <div style="max-width:640px;margin:40px auto;padding:0 20px">
+        <div style="background:#fff;border-radius:20px;padding:40px;text-align:center;box-shadow:0 8px 40px #0000001a;border:2px solid #e2e8f0">
+          <div style="font-size:64px;margin-bottom:12px">${aprobado?'🏆':'📚'}</div>
+          <h2 style="font-size:26px;font-weight:800;color:#0f172a;margin-bottom:8px">${aprobado?'¡Examen superado!':'Sigue practicando'}</h2>
+          <div style="width:80px;height:80px;border-radius:50%;background:${aprobado?'#dcfce7':'#fee2e2'};border:3px solid ${aprobado?'#16a34a':'#dc2626'};font-size:28px;font-weight:800;color:${aprobado?'#16a34a':'#dc2626'};line-height:80px;text-align:center;margin:16px auto">${nota}/10</div>
+          <p style="color:#64748b;font-size:15px;margin-bottom:8px">Has resuelto correctamente <strong>${aprobN} de ${total}</strong> ejercicios.</p>
+          ${!aprobado?`<p style="color:#94a3b8;font-size:13px;margin-bottom:20px">Necesitas 5 o más para aprobar. ¡Repasa los temas fallados!</p>`:''}
+          ${aprobado?`<p style="color:#64748b;font-size:13px;margin-bottom:20px">¡Dominas los fundamentos de Python! 🐍</p>`:''}
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            <button onclick="volverCurso()" style="padding:12px 24px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;color:#475569;font-weight:600">← Volver al curso</button>
+            ${!aprobado?`<button onclick="nuevoIntento()" style="padding:12px 24px;background:linear-gradient(135deg,#dc2626,#b91c1c);border:none;border-radius:12px;font-size:14px;color:#fff;font-weight:700">🔄 Nuevo intento</button>`:''}
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const triesN = EXAM_STATE.tries[EXAM_STATE.idx]||0;
+  const verSol = triesN >= INTENTOS_SOL;
+  const aprobN = EXAM_STATE.aprobadas.length;
+
+  let html = `<div style="max-width:800px;margin:0 auto;padding:20px">
+    <div style="background:#fff;border-radius:16px;padding:20px 24px;margin-bottom:16px;border:1px solid #e2e8f0;box-shadow:0 1px 6px #0000000a">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="background:#7c3aed;color:#fff;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700">Examen Final</span>
+          <span style="font-size:13px;color:#64748b;font-weight:600">Pregunta ${EXAM_STATE.idx+1} de ${total}</span>
+        </div>
+        <span style="font-size:13px;color:#16a34a;font-weight:700">✓ ${aprobN} correctas</span>
+      </div>
+      <div style="height:6px;background:#f1f5f9;border-radius:99px;overflow:hidden;margin-bottom:16px">
+        <div style="width:${(EXAM_STATE.idx/total)*100}%;height:100%;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:99px;transition:width .4s ease"></div>
+      </div>
+      <div style="display:inline-block;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:3px 10px;font-size:11.5px;font-weight:700;color:#7c3aed;margin-bottom:10px">Bloque ${preg.bloque}: ${esc(preg.titulo)}</div>
+      <p style="font-size:14px;color:#1e293b;line-height:1.8;white-space:pre-line">${esc(preg.task)}</p>
+    </div>
+    <div style="background:#0f172a;border-radius:14px;border:2px solid #1e293b;overflow:hidden;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#1e293b">
+        <div style="display:flex;gap:5px"><div style="width:10px;height:10px;border-radius:50%;background:#ff5f57"></div><div style="width:10px;height:10px;border-radius:50%;background:#febc2e"></div><div style="width:10px;height:10px;border-radius:50%;background:#28c840"></div></div>
+        <span style="font-size:11px;color:#64748b;font-family:'DM Mono',monospace">examen_${EXAM_STATE.idx+1}.py</span>
+        <span style="font-size:10.5px;color:#475569">Ctrl+Enter = ejecutar</span>
+      </div>
+      <div style="display:flex">
+        <div id="exam-line-nums" style="padding:12px 0;min-width:38px;background:#0b1120;border-right:1px solid #1e293b;text-align:right;user-select:none">${lineNums(EXAM_STATE.code)}</div>
+        <textarea id="exam-editor" onkeydown="onExamKey(event)" oninput="onExamInput()" style="flex:1;padding:12px 16px;background:#0f172a;border:none;color:#e2e8f0;font-size:13.5px;line-height:22px;font-family:'DM Mono',monospace;resize:vertical;min-height:140px;caret-color:#a855f7"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <button onclick="ejecutarExamen()" style="flex:1;padding:11px 0;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:11px;color:#fff;font-weight:700;font-size:14.5px">▶ Ejecutar</button>
+      <button onclick="toggleExamHint()" style="padding:11px 16px;background:#fff;border:1.5px solid #e2e8f0;border-radius:11px;color:#475569;font-size:13px">💡 ${EXAM_STATE.hint?'Ocultar':'Pista'}</button>
+    </div>`;
+
+  if (EXAM_STATE.hint) {
+    html += `<div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:12px;padding:13px 16px;margin-bottom:12px"><p style="font-size:13.5px;color:#451a03;line-height:1.7">${esc(preg.pista)}</p></div>`;
+  }
+
+  if (triesN>0 && !EXAM_STATE.aprobadas.includes(EXAM_STATE.idx)) {
+    html += `<div style="margin-bottom:12px;display:flex;align-items:center;gap:10px">
+      <div style="flex:1;height:4px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+        <div style="width:${Math.min(triesN/INTENTOS_SOL*100,100)}%;height:100%;background:${verSol?'#ef4444':'#f59e0b'};border-radius:99px;transition:width .4s"></div>
+      </div>
+      <span style="font-size:11px;color:#94a3b8;white-space:nowrap">${verSol?'Solución desbloqueada':`${triesN}/${INTENTOS_SOL} intentos`}</span>
+    </div>`;
+  }
+
+  if (EXAM_STATE.result) {
+    const r = EXAM_STATE.result;
+    html += `<div class="pop" style="background:#fff;border:1.5px solid ${r.correcto?'#86efac':'#fca5a5'};border-radius:16px;padding:18px 20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:34px;height:34px;border-radius:50%;background:${r.correcto?'#dcfce7':'#fee2e2'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${r.correcto?'✅':'❌'}</div>
+        <p style="font-weight:700;font-size:14.5px;color:${r.correcto?'#16a34a':'#dc2626'}">${r.correcto?'¡Correcto!':'No es lo esperado, revísalo.'}</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div><p style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px">Tu salida</p>
+          <pre style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:10px 12px;margin:0;font-size:12px;color:#1e293b;min-height:36px;white-space:pre-wrap">${esc(r.salida)||'(sin salida)'}</pre></div>
+        <div><p style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px">${r.correcto?'✓ Correcto':'Esperado'}</p>
+          <pre style="background:${r.correcto?'#f0fdf4':'#f8fafc'};border:1px solid ${r.correcto?'#86efac':'#e2e8f0'};border-radius:9px;padding:10px 12px;margin:0;font-size:12px;color:${r.correcto?'#16a34a':'#1e293b'};min-height:36px;white-space:pre-wrap">${esc(preg.expected)}</pre></div>
+      </div>
+      ${!r.correcto&&verSol?`<div style="padding:12px 14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;margin-bottom:12px">
+        <p style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:6px;text-transform:uppercase">📖 Solución</p>
+        <pre style="margin:0;font-size:12.5px;color:#0c4a6e;white-space:pre-wrap">${esc(preg.solution)}</pre>
+      </div>`:''}
+      <button onclick="siguienteExamen()" style="width:100%;padding:11px;background:${r.correcto?'linear-gradient(135deg,#16a34a,#15803d)':'linear-gradient(135deg,#7c3aed,#6d28d9)'};border:none;border-radius:11px;color:#fff;font-weight:700;font-size:14px">
+        ${EXAM_STATE.idx<total-1?(r.correcto?'Siguiente pregunta →':'Pasar →'):'Ver resultado final →'}
+      </button>
+    </div>`;
+  }
+
+  html += '</div>';
+  document.getElementById('exam-view').innerHTML = html;
+  const ta = document.getElementById('exam-editor');
+  if (ta) ta.value = EXAM_STATE.code;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACCIONES
+// ═══════════════════════════════════════════════════════════════
+function updateHeader() {
+  const numDone = Object.keys(STATE.done).length;
+  const total = CURRICULO.length;
+  document.getElementById('progress-bar').style.width = `${Math.round(numDone/total*100)}%`;
+  document.getElementById('progress-text').textContent = `${numDone}/${total}`;
+  const streakBadge = document.getElementById('streak-badge');
+  if (STATE.streak > 1) { streakBadge.style.display='flex'; document.getElementById('streak-num').textContent=STATE.streak; }
+  else streakBadge.style.display='none';
+  const xpBadge = document.getElementById('xp-badge');
+  if (numDone > 0) { xpBadge.style.display='block'; document.getElementById('xp-num').textContent=`⭐ ${numDone*10} XP`; }
+  else xpBadge.style.display='none';
+  const examBtn = document.getElementById('exam-btn');
+  if (examBtn) examBtn.style.display = todoCompletado() ? 'block' : 'none';
+}
+
+function goTo(i) {
+  const oldBloque = CURRICULO[STATE.idx] ? CURRICULO[STATE.idx].bloque.id : null;
+  const newBloque = CURRICULO[i] ? CURRICULO[i].bloque.id : null;
+  // Only refresh if entering a DIFFERENT bloque AND it's not fully completed
+  // (so completed bloques keep their values and checks, but new ones get fresh data)
+  if (newBloque && newBloque !== oldBloque && !bloqueCompletado(newBloque)) {
+    refreshBloque(newBloque);
+  }
+  STATE.idx = i; STATE.code = STARTER; STATE.result = null; STATE.hint = false; STATE.panel = 'explicacion';
+  render();
+}
+
+function refreshBloque(bid) {
+  // Rebuild exercises for this bloque with new random values
+  const newBloques = buildCurriculo();
+  const newBloque = newBloques.find(b => b.id === bid);
+  const oldBloqueIdx = BLOQUES.findIndex(b => b.id === bid);
+  if (!newBloque || oldBloqueIdx === -1) return;
+  BLOQUES[oldBloqueIdx] = newBloque;
+  CURRICULO = aplanar(BLOQUES);
+}
+
+function setPanel(p) { STATE.panel = p; renderCourse(); renderSidebar(); }
+function toggleHint() { STATE.hint = !STATE.hint; renderCourse(); }
+function resetCode() { STATE.code = STARTER; STATE.result = null; renderCourse(); }
+
+function onCodeInput() {
+  const ta = document.getElementById('code-editor');
+  if (!ta) return;
+  STATE.code = ta.value;
+  document.getElementById('line-nums').innerHTML = lineNums(STATE.code);
+}
+
+function onEditorKey(e) {
+  const ta = document.getElementById('code-editor');
+  if (!ta) return;
+  const ini = ta.selectionStart, fin = ta.selectionEnd, sel = ta.value.substring(ini,fin);
+  if (e.key==='Tab') { e.preventDefault(); ta.setRangeText('    ',ini,fin,'end'); STATE.code=ta.value; document.getElementById('line-nums').innerHTML=lineNums(STATE.code); return; }
+  if ((e.ctrlKey||e.metaKey)&&e.key==='Enter') { e.preventDefault(); ejecutar(); return; }
+  const PARES={'(':')','[':']','{':'}','"':'"',"'":"'"};
+  const CIERRES=new Set([')',']','}']);
+  if (sel.length>0&&PARES[e.key]) { e.preventDefault(); ta.setRangeText(e.key+sel+PARES[e.key],ini,fin,'select'); STATE.code=ta.value; return; }
+  if (PARES[e.key]) { e.preventDefault(); if((e.key==='"'||e.key==="'")&&ta.value[ini]===e.key){ta.setSelectionRange(ini+1,ini+1);return;} ta.setRangeText(e.key+PARES[e.key],ini,fin,'preserve'); ta.setSelectionRange(ini+1,ini+1); STATE.code=ta.value; document.getElementById('line-nums').innerHTML=lineNums(STATE.code); return; }
+  if (CIERRES.has(e.key)&&ta.value[ini]===e.key) { e.preventDefault(); ta.setSelectionRange(ini+1,ini+1); return; }
+}
+
+function ejecutar() {
+  const ta = document.getElementById('code-editor');
+  if (ta) STATE.code = ta.value;
+  const ej = CURRICULO[STATE.idx];
+  const salida = runPython(STATE.code);
+  const correcto = ej.validator ? ej.validator(salida, STATE.code) : norm(salida) === norm(ej.expected);
+  STATE.result = {salida, correcto, flexible: ej.validator && correcto};
+  if (correcto) {
+    if (!STATE.done[ej.id]) { STATE.done[ej.id]=true; showXP(); STATE.streak++; }
+  } else {
+    STATE.streak = 0;
+    STATE.tries[ej.id] = (STATE.tries[ej.id]||0)+1;
+  }
+  saveState();
+  updateHeader();
+  renderSidebar();
+  renderCourse();
+  const ta2 = document.getElementById('code-editor');
+  if (ta2) ta2.value = STATE.code;
+}
+
+function showXP() {
+  setTimeout(()=>{
+    const c = document.getElementById('xp-float-container');
+    if (c) { c.innerHTML='<span class="xp-float">+10 XP ⭐</span>'; setTimeout(()=>{c.innerHTML='';},1400); }
+  },50);
+}
+
+function otraVariante() {
+  const ej = CURRICULO[STATE.idx];
+  const bl = ej.bloque;
+  const cands = CURRICULO.map((e,i)=>({e,i})).filter(({e,i})=>e.bloque.id===bl.id&&!e.esProyecto&&i!==STATE.idx);
+  if (!cands.length) return;
+  const noHechos = cands.filter(({e})=>!STATE.done[e.id]);
+  goTo((noHechos.length?noHechos[0]:cands[0]).i);
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  STATE.sidebarOpen = !STATE.sidebarOpen;
+  sb.style.display = STATE.sidebarOpen ? 'block' : 'none';
+}
+
+// Examen
+function startExam() {
+  EXAM_QUESTIONS = buildExamen();
+  EXAM_STATE = {idx:0, code:STARTER, aprobadas:[], tries:{}, result:null, hint:false};
+  document.getElementById('course-view').style.display='none';
+  document.getElementById('exam-view').style.display='block';
+  document.getElementById('finish-view').style.display='none';
+  renderExam();
+}
+
+function volverCurso() {
+  document.getElementById('course-view').style.display='block';
+  document.getElementById('exam-view').style.display='none';
+  renderCourse();
+}
+
+function nuevoIntento() {
+  EXAM_QUESTIONS = buildExamen();
+  EXAM_STATE = {idx:0, code:STARTER, aprobadas:[], tries:{}, result:null, hint:false};
+  renderExam();
+}
+
+function ejecutarExamen() {
+  const ta = document.getElementById('exam-editor');
+  if (ta) EXAM_STATE.code = ta.value;
+  const preg = EXAM_QUESTIONS[EXAM_STATE.idx];
+  const salida = runPython(EXAM_STATE.code);
+  const correcto = preg.validator ? preg.validator(salida, EXAM_STATE.code) : norm(salida) === norm(preg.expected);
+  EXAM_STATE.result = {salida, correcto};
+  if (correcto && !EXAM_STATE.aprobadas.includes(EXAM_STATE.idx)) EXAM_STATE.aprobadas.push(EXAM_STATE.idx);
+  if (!correcto) EXAM_STATE.tries[EXAM_STATE.idx] = (EXAM_STATE.tries[EXAM_STATE.idx]||0)+1;
+  renderExam();
+  const ta2 = document.getElementById('exam-editor');
+  if (ta2) ta2.value = EXAM_STATE.code;
+}
+
+function siguienteExamen() {
+  EXAM_STATE.idx++;
+  EXAM_STATE.code = STARTER;
+  EXAM_STATE.result = null;
+  EXAM_STATE.hint = false;
+  renderExam();
+}
+
+function toggleExamHint() { EXAM_STATE.hint = !EXAM_STATE.hint; renderExam(); const ta=document.getElementById('exam-editor'); if(ta) ta.value=EXAM_STATE.code; }
+
+function onExamInput() {
+  const ta = document.getElementById('exam-editor');
+  if (!ta) return;
+  EXAM_STATE.code = ta.value;
+  document.getElementById('exam-line-nums').innerHTML = lineNums(EXAM_STATE.code);
+}
+
+function onExamKey(e) {
+  const ta = document.getElementById('exam-editor');
+  if (!ta) return;
+  const ini = ta.selectionStart, fin = ta.selectionEnd;
+  if (e.key==='Tab') { e.preventDefault(); ta.setRangeText('    ',ini,fin,'end'); EXAM_STATE.code=ta.value; document.getElementById('exam-line-nums').innerHTML=lineNums(EXAM_STATE.code); return; }
+  if ((e.ctrlKey||e.metaKey)&&e.key==='Enter') { e.preventDefault(); ejecutarExamen(); return; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER PRINCIPAL
+// ═══════════════════════════════════════════════════════════════
+function render() {
+  renderSidebar();
+  renderCourse();
+  updateHeader();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PERSISTENCIA
+// ═══════════════════════════════════════════════════════════════
+function saveState() {
+  try {
+    localStorage.setItem('pylingo_done', JSON.stringify(STATE.done));
+    localStorage.setItem('pylingo_xp', String(Object.keys(STATE.done).length * 10));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const done = localStorage.getItem('pylingo_done');
+    if (done) STATE.done = JSON.parse(done);
+  } catch(e) {}
+}
+
+function resetProgress() {
+  if (!confirm('¿Seguro que quieres borrar todo el progreso y empezar de cero?')) return;
+  try { localStorage.removeItem('pylingo_done'); } catch(e) {}
+  STATE.done = {};
+  STATE.streak = 0;
+  STATE.idx = 0;
+  STATE.code = STARTER;
+  STATE.result = null;
+  STATE.hint = false;
+  STATE.panel = 'explicacion';
+  BLOQUES = buildCurriculo();
+  CURRICULO = aplanar(BLOQUES);
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+BLOQUES = buildCurriculo();
+CURRICULO = aplanar(BLOQUES);
+loadState();
+render();
+</script>
+</body>
 </html>
